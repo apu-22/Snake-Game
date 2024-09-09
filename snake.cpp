@@ -1,5 +1,6 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_mixer.h> 
 #include <iostream>
 
 using namespace std;
@@ -9,10 +10,11 @@ const int SCREEN_HEIGHT = 600;
 
 SDL_Window *window = nullptr;
 SDL_Renderer *renderer = nullptr;
+Mix_Music *backgroundMusic = nullptr; 
 
 bool initializeSDL(SDL_Window *&window, SDL_Renderer *&renderer)
 {
-    if (SDL_Init(SDL_INIT_VIDEO) < 0)
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) 
     {
         cout << "SDL could not initialize! SDL Error: " << SDL_GetError() << endl;
         return false;
@@ -21,6 +23,12 @@ bool initializeSDL(SDL_Window *&window, SDL_Renderer *&renderer)
     if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG))
     {
         cout << "SDL_image could not initialize! SDL_image Error: " << IMG_GetError() << endl;
+        return false;
+    }
+
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
+    {
+        cout << "SDL_mixer could not initialize! SDL_mixer Error: " << Mix_GetError() << endl;
         return false;
     }
 
@@ -41,12 +49,13 @@ bool initializeSDL(SDL_Window *&window, SDL_Renderer *&renderer)
     return true;
 }
 
+//function to load image and texture
 bool loadAndRenderImage(SDL_Renderer *renderer, const char *filePath)
 {
     SDL_Texture *texture = IMG_LoadTexture(renderer, filePath);
     if (texture == nullptr)
     {
-        std::cout << "Failed to load texture! SDL_image Error: " << IMG_GetError() << std::endl;
+        cout << "Failed to load texture! SDL_image Error: " << IMG_GetError() << endl;
         return false;
     }
 
@@ -61,6 +70,26 @@ bool loadAndRenderImage(SDL_Renderer *renderer, const char *filePath)
     return true;
 }
 
+// Function to load and play background music
+bool playBackgroundMusic(const char *musicPath)
+{
+    backgroundMusic = Mix_LoadMUS(musicPath);
+    if (backgroundMusic == nullptr)
+    {
+        cout << "Failed to load background music! SDL_mixer Error: " << Mix_GetError() << endl;
+        return false;
+    }
+
+    if (Mix_PlayMusic(backgroundMusic, -1) == -1)
+    {
+        cout << "Failed to play background music! SDL_mixer Error: " << Mix_GetError() << endl;
+        return false;
+    }
+
+    return true;
+}
+
+//function to main gameloop
 void GameLoop(SDL_Renderer *renderer)
 {
     SDL_Event e;
@@ -80,26 +109,41 @@ void GameLoop(SDL_Renderer *renderer)
 
 void cleanUp(SDL_Window *window, SDL_Renderer *renderer)
 {
+    Mix_FreeMusic(backgroundMusic);
+    backgroundMusic = nullptr;
+
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+
+    Mix_Quit();
     IMG_Quit();
     SDL_Quit();
 }
 
 int main(int argc, char *args[])
 {
+    //create window and render
     if (!initializeSDL(window, renderer))
     {
         cleanUp(window, renderer);
         return -1;
     }
-
+    
+    //snake game cover photo
     if (!loadAndRenderImage(renderer, "image/cover_photo.png"))
     {
         cleanUp(window, renderer);
         return -1;
     }
 
+    // Play background music
+    if (!playBackgroundMusic("audio/background_music.mp3"))
+    {
+        cleanUp(window, renderer);
+        return -1;
+    }
+
+    //main gameloop
     GameLoop(renderer);
 
     cleanUp(window, renderer);
