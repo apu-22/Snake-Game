@@ -124,7 +124,7 @@ bool playBackgroundMusic(const char *musicPath)
 void renderStartButton(SDL_Renderer *renderer, int x, int y, int width, int height, SDL_Color textColor)
 {
     SDL_Rect startRect = {x, y, width, height};
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Red color for button
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); 
     SDL_RenderFillRect(renderer, &startRect);
     renderText(renderer, "Start Game", x + 30, y + 10, textColor);
 }
@@ -133,7 +133,7 @@ void renderStartButton(SDL_Renderer *renderer, int x, int y, int width, int heig
 void renderExitButton(SDL_Renderer *renderer, int x, int y, int width, int height, SDL_Color textColor)
 {
     SDL_Rect exitRect = {x, y, width, height};
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Red color for button
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); 
     SDL_RenderFillRect(renderer, &exitRect);
     renderText(renderer, "Exit Game", x + 30, y + 10, textColor);
 }
@@ -152,18 +152,52 @@ bool handleExitButtonClick(int mouseX, int mouseY, int x, int y, int width, int 
 
 void GameStarted(SDL_Renderer *renderer)
 {
-    if (!loadAndRenderImage(renderer, "image/cover_photo.png"))
+    // Clean up the existing window and renderer 
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+
+    // Create a new window for the snake game
+    SDL_Window *gameWindow = SDL_CreateWindow("Game Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+    if (gameWindow == nullptr)
     {
-        cout << "Failed to load game background!" << endl;
+        cout << "Game window could not be created! SDL Error: " << SDL_GetError() << endl;
         return;
     }
 
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderClear(renderer);
+    SDL_Renderer *gameRenderer = SDL_CreateRenderer(gameWindow, -1, SDL_RENDERER_ACCELERATED);
+    if (gameRenderer == nullptr)
+    {
+        cout << "Game renderer could not be created! SDL Error: " << SDL_GetError() << endl;
+        SDL_DestroyWindow(gameWindow);
+        return;
+    }
 
-    SDL_RenderPresent(renderer);
+    // Render the snake game screen
+    SDL_SetRenderDrawColor(gameRenderer, 100, 150, 200, 255);
+    SDL_RenderClear(gameRenderer);
+
+    SDL_RenderPresent(gameRenderer);
+
+    // Game loop for the new window
+    bool gameRunning = true;
+    SDL_Event e;
+    while (gameRunning)
+    {
+        while (SDL_PollEvent(&e) != 0)
+        {
+            if (e.type == SDL_QUIT)
+            {
+                gameRunning = false; 
+            }
+        }
+
+        SDL_RenderPresent(gameRenderer);
+    }
+
+    // Clean up the new snake game window and renderer after the snake game ends
+    SDL_DestroyRenderer(gameRenderer);
+    SDL_DestroyWindow(gameWindow);
 }
-
 void GameLoop(SDL_Renderer *renderer)
 {
     SDL_Event e;
