@@ -150,13 +150,13 @@ bool handleExitButtonClick(int mouseX, int mouseY, int x, int y, int width, int 
     return (mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + height);
 }
 
+// running snake game
 void GameStarted(SDL_Renderer *renderer)
 {
-    // Clean up the existing window and renderer
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 
-    // Create a new window for the snake game
+    // Create a new window for the game
     SDL_Window *gameWindow = SDL_CreateWindow("Game Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
     if (gameWindow == nullptr)
     {
@@ -172,37 +172,116 @@ void GameStarted(SDL_Renderer *renderer)
         return;
     }
 
-    // Render the snake game screen
+    // Initial position and size of the head of snake
+    int headX = SCREEN_WIDTH / 2 - 5;
+    int headY = SCREEN_HEIGHT / 2 - 5;
+    int headW = 10, headH = 10;
+
+    // Velocity and direction of the head
+    int velocity = 3;
+    int dirX = 1;
+    int dirY = 0;
+
+    // Render the game screen with a background color
     SDL_SetRenderDrawColor(gameRenderer, 100, 150, 200, 255);
     SDL_RenderClear(gameRenderer);
 
-    // Draw a small rectangle as a head of snake in the new window
-    SDL_Rect head = {SCREEN_WIDTH / 2 - 10, SCREEN_HEIGHT / 2 - 10, 10, 10};
-    SDL_SetRenderDrawColor(gameRenderer, 255, 0, 0, 255);
-    SDL_RenderFillRect(gameRenderer, &head);
-
-    SDL_RenderPresent(gameRenderer);
-
-    // Game loop for the new window
     bool gameRunning = true;
     SDL_Event e;
+
     while (gameRunning)
     {
         while (SDL_PollEvent(&e) != 0)
         {
             if (e.type == SDL_QUIT)
             {
-                gameRunning = false;
+                gameRunning = false; // Quit the game if the user closes the window
+            }
+            else if (e.type == SDL_KEYDOWN) // Handle key presses to change direction
+            {
+                switch (e.key.keysym.sym)
+                {
+                case SDLK_UP:
+                case SDLK_w:
+                    if (dirY == 0)
+                    {
+                        dirX = 0;
+                        dirY = -1; // Move up
+                    }
+                    break;
+                case SDLK_DOWN:
+                case SDLK_s:
+                    if (dirY == 0)
+                    {
+                        dirX = 0;
+                        dirY = 1; // Move down
+                    }
+                    break;
+                case SDLK_LEFT:
+                case SDLK_a:
+                    if (dirX == 0)
+                    {
+                        dirX = -1;
+                        dirY = 0; // Move left
+                    }
+                    break;
+                case SDLK_RIGHT:
+                case SDLK_d:
+                    if (dirX == 0)
+                    {
+                        dirX = 1;
+                        dirY = 0; // Move right
+                    }
+                    break;
+                }
             }
         }
 
+        // Update the head position with speed
+        headX += dirX * velocity;
+        headY += dirY * velocity;
+
+        // Boundary checking to ensure the head stays within the window
+        if (headX < 0)
+        {
+            headX = 0;
+            dirX = 1; // Bounce to the right if hitting the left edge
+        }
+        if (headX + headW > SCREEN_WIDTH)
+        {
+            headX = SCREEN_WIDTH - headW;
+            dirX = -1; // Bounce to the left if hitting the right edge
+        }
+        if (headY < 0)
+        {
+            headY = 0;
+            dirY = 1; // Bounce down if hitting the top edge
+        }
+        if (headY + headH > SCREEN_HEIGHT)
+        {
+            headY = SCREEN_HEIGHT - headH;
+            dirY = -1; // Bounce up if hitting the bottom edge
+        }
+
+        // Clear the screen and render the head of snake
+        SDL_SetRenderDrawColor(gameRenderer, 100, 150, 200, 255);
+        SDL_RenderClear(gameRenderer);
+
+        SDL_Rect head = {headX, headY, headW, headH}; // Update head position
+        SDL_SetRenderDrawColor(gameRenderer, 255, 0, 0, 255);
+        SDL_RenderFillRect(gameRenderer, &head);
+
+        // Present the rendered content
         SDL_RenderPresent(gameRenderer);
+
+        SDL_Delay(16);
     }
 
-    // Clean up the new snake game window and renderer after the snake game ends
+    // Clean up the new game window and renderer after the game ends
     SDL_DestroyRenderer(gameRenderer);
     SDL_DestroyWindow(gameWindow);
 }
+
 void GameLoop(SDL_Renderer *renderer)
 {
     SDL_Event e;
