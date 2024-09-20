@@ -124,7 +124,7 @@ bool playBackgroundMusic(const char *musicPath)
 void renderStartButton(SDL_Renderer *renderer, int x, int y, int width, int height, SDL_Color textColor)
 {
     SDL_Rect startRect = {x, y, width, height};
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); 
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
     SDL_RenderFillRect(renderer, &startRect);
     renderText(renderer, "Start Game", x + 30, y + 10, textColor);
 }
@@ -133,7 +133,7 @@ void renderStartButton(SDL_Renderer *renderer, int x, int y, int width, int heig
 void renderExitButton(SDL_Renderer *renderer, int x, int y, int width, int height, SDL_Color textColor)
 {
     SDL_Rect exitRect = {x, y, width, height};
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); 
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
     SDL_RenderFillRect(renderer, &exitRect);
     renderText(renderer, "Exit Game", x + 30, y + 10, textColor);
 }
@@ -152,7 +152,7 @@ bool handleExitButtonClick(int mouseX, int mouseY, int x, int y, int width, int 
 
 void GameStarted(SDL_Renderer *renderer)
 {
-    // Clean up the existing window and renderer 
+    // Clean up the existing window and renderer
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 
@@ -176,6 +176,11 @@ void GameStarted(SDL_Renderer *renderer)
     SDL_SetRenderDrawColor(gameRenderer, 100, 150, 200, 255);
     SDL_RenderClear(gameRenderer);
 
+    // Draw a small rectangle as a head of snake in the new window
+    SDL_Rect head = {SCREEN_WIDTH / 2 - 10, SCREEN_HEIGHT / 2 - 10, 10, 10};
+    SDL_SetRenderDrawColor(gameRenderer, 255, 0, 0, 255);
+    SDL_RenderFillRect(gameRenderer, &head);
+
     SDL_RenderPresent(gameRenderer);
 
     // Game loop for the new window
@@ -187,7 +192,7 @@ void GameStarted(SDL_Renderer *renderer)
         {
             if (e.type == SDL_QUIT)
             {
-                gameRunning = false; 
+                gameRunning = false;
             }
         }
 
