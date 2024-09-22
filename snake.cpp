@@ -2,7 +2,15 @@
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_mixer.h>
 #include <SDL2/SDL_ttf.h>
-#include <iostream>
+#include <bits/stdc++.h>
+#include <vector>
+#include <cstdlib> 
+#include <ctime>   
+
+struct SnakeSegment
+{
+    int x, y; 
+};
 
 using namespace std;
 
@@ -150,14 +158,14 @@ bool handleExitButtonClick(int mouseX, int mouseY, int x, int y, int width, int 
     return (mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + height);
 }
 
-// running snake game
+
 void GameStarted(SDL_Renderer *renderer)
 {
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 
     // Create a new window for the game
-    SDL_Window *gameWindow = SDL_CreateWindow("Game Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+    SDL_Window *gameWindow = SDL_CreateWindow("Snake Game", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
     if (gameWindow == nullptr)
     {
         cout << "Game window could not be created! SDL Error: " << SDL_GetError() << endl;
@@ -172,20 +180,18 @@ void GameStarted(SDL_Renderer *renderer)
         return;
     }
 
-    // Initial position and size of the head of snake
-    int headX = SCREEN_WIDTH / 2 - 5;
-    int headY = SCREEN_HEIGHT / 2 - 5;
-    int headW = 10, headH = 10;
+    // Set random seed for food placement
+    srand(static_cast<unsigned int>(time(0)));
 
-    // Velocity and direction of the head
-    int velocity = 3;
-    int dirX = 1;
-    int dirY = 0;
+    // Snake initialization
+    vector<SnakeSegment> snake = {{SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2}}; 
+    int snakeVelocity = 10;                                            
+    int dirX = 1, dirY = 0;                                              
 
-    // Render the game screen with a background color
-    SDL_SetRenderDrawColor(gameRenderer, 100, 150, 200, 255);
-    SDL_RenderClear(gameRenderer);
+    // Food initialization
+    SDL_Rect food = {rand() % (SCREEN_WIDTH / snakeVelocity) * snakeVelocity, rand() % (SCREEN_HEIGHT / snakeVelocity) * snakeVelocity, 10, 10};
 
+    // Main game loop
     bool gameRunning = true;
     SDL_Event e;
 
@@ -195,10 +201,11 @@ void GameStarted(SDL_Renderer *renderer)
         {
             if (e.type == SDL_QUIT)
             {
-                gameRunning = false; // Quit the game if the user closes the window
+                gameRunning = false;
             }
-            else if (e.type == SDL_KEYDOWN) // Handle key presses to change direction
+            else if (e.type == SDL_KEYDOWN)
             {
+                // Control snake with key button
                 switch (e.key.keysym.sym)
                 {
                 case SDLK_UP:
@@ -206,7 +213,7 @@ void GameStarted(SDL_Renderer *renderer)
                     if (dirY == 0)
                     {
                         dirX = 0;
-                        dirY = -1; // Move up
+                        dirY = -1;
                     }
                     break;
                 case SDLK_DOWN:
@@ -214,7 +221,7 @@ void GameStarted(SDL_Renderer *renderer)
                     if (dirY == 0)
                     {
                         dirX = 0;
-                        dirY = 1; // Move down
+                        dirY = 1;
                     }
                     break;
                 case SDLK_LEFT:
@@ -222,7 +229,7 @@ void GameStarted(SDL_Renderer *renderer)
                     if (dirX == 0)
                     {
                         dirX = -1;
-                        dirY = 0; // Move left
+                        dirY = 0;
                     }
                     break;
                 case SDLK_RIGHT:
@@ -230,57 +237,68 @@ void GameStarted(SDL_Renderer *renderer)
                     if (dirX == 0)
                     {
                         dirX = 1;
-                        dirY = 0; // Move right
+                        dirY = 0;
                     }
                     break;
                 }
             }
         }
 
-        // Update the head position with speed
-        headX += dirX * velocity;
-        headY += dirY * velocity;
+        // snake movement
+        SnakeSegment newHead = {snake[0].x + dirX * snakeVelocity, snake[0].y + dirY * snakeVelocity};
 
-        // Boundary checking to ensure the head stays within the window
-        if (headX < 0)
+        // Snake wrapping around  the screen 
+        if (newHead.x < 0)
+            newHead.x = SCREEN_WIDTH - snakeVelocity;
+        if (newHead.x >= SCREEN_WIDTH)
+            newHead.x = 0;
+        if (newHead.y < 0)
+            newHead.y = SCREEN_HEIGHT - snakeVelocity;
+        if (newHead.y >= SCREEN_HEIGHT)
+            newHead.y = 0;
+
+        // Add new head and remove the tail (unless growing)
+        snake.insert(snake.begin(), newHead);
+
+        // Check if snake eats food
+        if (newHead.x == food.x && newHead.y == food.y)
         {
-            headX = 0;
-            dirX = 1; // Bounce to the right if hitting the left edge
+            // Generate new food in a random position
+            food.x = rand() % (SCREEN_WIDTH / snakeVelocity) * snakeVelocity;
+            food.y = rand() % (SCREEN_HEIGHT / snakeVelocity) * snakeVelocity;
         }
-        if (headX + headW > SCREEN_WIDTH)
+        else
         {
-            headX = SCREEN_WIDTH - headW;
-            dirX = -1; // Bounce to the left if hitting the right edge
-        }
-        if (headY < 0)
-        {
-            headY = 0;
-            dirY = 1; // Bounce down if hitting the top edge
-        }
-        if (headY + headH > SCREEN_HEIGHT)
-        {
-            headY = SCREEN_HEIGHT - headH;
-            dirY = -1; // Bounce up if hitting the bottom edge
+            snake.pop_back(); // Remove tail if not growing
         }
 
-        // Clear the screen and render the head of snake
+        // Clear screen
         SDL_SetRenderDrawColor(gameRenderer, 100, 150, 200, 255);
         SDL_RenderClear(gameRenderer);
 
-        SDL_Rect head = {headX, headY, headW, headH}; // Update head position
-        SDL_SetRenderDrawColor(gameRenderer, 255, 0, 0, 255);
-        SDL_RenderFillRect(gameRenderer, &head);
+        // Draw snake
+        SDL_SetRenderDrawColor(gameRenderer, 0, 255, 0, 255); 
+        for (const SnakeSegment &segment : snake)
+        {
+            SDL_Rect rect = {segment.x, segment.y, snakeVelocity, snakeVelocity};
+            SDL_RenderFillRect(gameRenderer, &rect);
+        }
 
-        // Present the rendered content
+        // Draw food
+        SDL_SetRenderDrawColor(gameRenderer, 255, 0, 0, 255); 
+        SDL_RenderFillRect(gameRenderer, &food);
+
         SDL_RenderPresent(gameRenderer);
 
-        SDL_Delay(16);
+        // Delay to control frame rate
+        SDL_Delay(100);
     }
 
-    // Clean up the new game window and renderer after the game ends
+    // Clean up after the snake game ends
     SDL_DestroyRenderer(gameRenderer);
     SDL_DestroyWindow(gameWindow);
 }
+
 
 void GameLoop(SDL_Renderer *renderer)
 {
