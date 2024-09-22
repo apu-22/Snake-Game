@@ -4,12 +4,12 @@
 #include <SDL2/SDL_ttf.h>
 #include <bits/stdc++.h>
 #include <vector>
-#include <cstdlib> 
-#include <ctime>   
+#include <cstdlib>
+#include <ctime>
 
 struct SnakeSegment
 {
-    int x, y; 
+    int x, y;
 };
 
 using namespace std;
@@ -21,6 +21,7 @@ SDL_Window *window = nullptr;
 SDL_Renderer *renderer = nullptr;
 Mix_Music *backgroundMusic = nullptr;
 TTF_Font *font = nullptr;
+Mix_Chunk *eatingSound = nullptr;
 
 bool initializeSDL(SDL_Window *&window, SDL_Renderer *&renderer)
 {
@@ -70,6 +71,13 @@ bool initializeSDL(SDL_Window *&window, SDL_Renderer *&renderer)
     if (font == nullptr)
     {
         cout << "Failed to load font! SDL_ttf Error: " << TTF_GetError() << endl;
+        return false;
+    }
+
+    eatingSound = Mix_LoadWAV("audio/eating_sound.mp3");
+    if (eatingSound == nullptr)
+    {
+        cout << "Failed to load eating sound effect! SDL_mixer Error: " << Mix_GetError() << endl;
         return false;
     }
 
@@ -158,7 +166,6 @@ bool handleExitButtonClick(int mouseX, int mouseY, int x, int y, int width, int 
     return (mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + height);
 }
 
-
 void GameStarted(SDL_Renderer *renderer)
 {
     SDL_DestroyRenderer(renderer);
@@ -184,9 +191,9 @@ void GameStarted(SDL_Renderer *renderer)
     srand(static_cast<unsigned int>(time(0)));
 
     // Snake initialization
-    vector<SnakeSegment> snake = {{SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2}}; 
-    int snakeVelocity = 10;                                            
-    int dirX = 1, dirY = 0;                                              
+    vector<SnakeSegment> snake = {{SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2}};
+    int snakeVelocity = 10;
+    int dirX = 1, dirY = 0;
 
     // Food initialization
     SDL_Rect food = {rand() % (SCREEN_WIDTH / snakeVelocity) * snakeVelocity, rand() % (SCREEN_HEIGHT / snakeVelocity) * snakeVelocity, 10, 10};
@@ -247,7 +254,7 @@ void GameStarted(SDL_Renderer *renderer)
         // snake movement
         SnakeSegment newHead = {snake[0].x + dirX * snakeVelocity, snake[0].y + dirY * snakeVelocity};
 
-        // Snake wrapping around  the screen 
+        // Snake wrapping around  the screen
         if (newHead.x < 0)
             newHead.x = SCREEN_WIDTH - snakeVelocity;
         if (newHead.x >= SCREEN_WIDTH)
@@ -263,6 +270,8 @@ void GameStarted(SDL_Renderer *renderer)
         // Check if snake eats food
         if (newHead.x == food.x && newHead.y == food.y)
         {
+            Mix_PlayChannel(-1, eatingSound, 0);
+
             // Generate new food in a random position
             food.x = rand() % (SCREEN_WIDTH / snakeVelocity) * snakeVelocity;
             food.y = rand() % (SCREEN_HEIGHT / snakeVelocity) * snakeVelocity;
@@ -277,7 +286,7 @@ void GameStarted(SDL_Renderer *renderer)
         SDL_RenderClear(gameRenderer);
 
         // Draw snake
-        SDL_SetRenderDrawColor(gameRenderer, 0, 255, 0, 255); 
+        SDL_SetRenderDrawColor(gameRenderer, 0, 255, 0, 255);
         for (const SnakeSegment &segment : snake)
         {
             SDL_Rect rect = {segment.x, segment.y, snakeVelocity, snakeVelocity};
@@ -285,7 +294,7 @@ void GameStarted(SDL_Renderer *renderer)
         }
 
         // Draw food
-        SDL_SetRenderDrawColor(gameRenderer, 255, 0, 0, 255); 
+        SDL_SetRenderDrawColor(gameRenderer, 255, 0, 0, 255);
         SDL_RenderFillRect(gameRenderer, &food);
 
         SDL_RenderPresent(gameRenderer);
@@ -298,7 +307,6 @@ void GameStarted(SDL_Renderer *renderer)
     SDL_DestroyRenderer(gameRenderer);
     SDL_DestroyWindow(gameWindow);
 }
-
 
 void GameLoop(SDL_Renderer *renderer)
 {
@@ -365,17 +373,20 @@ void GameLoop(SDL_Renderer *renderer)
 
 void cleanUp(SDL_Window *window, SDL_Renderer *renderer)
 {
+    Mix_FreeChunk(eatingSound);
+    eatingSound = nullptr;
+
     Mix_FreeMusic(backgroundMusic);
     backgroundMusic = nullptr;
 
-    TTF_CloseFont(font); // Clean up font
+    TTF_CloseFont(font);
     font = nullptr;
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 
     Mix_Quit();
-    TTF_Quit(); // Quit SDL_ttf
+    TTF_Quit();
     IMG_Quit();
     SDL_Quit();
 }
