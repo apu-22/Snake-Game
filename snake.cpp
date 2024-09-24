@@ -22,6 +22,7 @@ SDL_Renderer *renderer = nullptr;
 Mix_Music *backgroundMusic = nullptr;
 TTF_Font *font = nullptr;
 Mix_Chunk *eatingSound = nullptr;
+Mix_Chunk *bonusEatingSound = nullptr;
 
 bool initializeSDL(SDL_Window *&window, SDL_Renderer *&renderer)
 {
@@ -75,6 +76,13 @@ bool initializeSDL(SDL_Window *&window, SDL_Renderer *&renderer)
     }
 
     eatingSound = Mix_LoadWAV("audio/eating_sound.mp3");
+    if (eatingSound == nullptr)
+    {
+        cout << "Failed to load eating sound effect! SDL_mixer Error: " << Mix_GetError() << endl;
+        return false;
+    }
+
+    bonusEatingSound = Mix_LoadWAV("audio/bonus_eating_sound.mp3");
     if (eatingSound == nullptr)
     {
         cout << "Failed to load eating sound effect! SDL_mixer Error: " << Mix_GetError() << endl;
@@ -319,7 +327,7 @@ void GameStarted(SDL_Renderer *gameRenderer)
 
             if (distance < bonusFoodRadius + snakeVelocity / 2)
             {
-                Mix_PlayChannel(-1, eatingSound, 0);
+                Mix_PlayChannel(-1, bonusEatingSound, 0);
                 score += 10;
                 bonusFoodActive = false;
             }
