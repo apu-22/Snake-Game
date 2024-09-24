@@ -166,13 +166,11 @@ bool handleExitButtonClick(int mouseX, int mouseY, int x, int y, int width, int 
     return (mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + height);
 }
 
-
-void GameStarted(SDL_Renderer *renderer)
+void GameStarted(SDL_Renderer *gameRenderer)
 {
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 
-    // Create a new window for the snake game
     SDL_Window *gameWindow = SDL_CreateWindow("Snake Game", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
     if (gameWindow == nullptr)
     {
@@ -180,7 +178,7 @@ void GameStarted(SDL_Renderer *renderer)
         return;
     }
 
-    SDL_Renderer *gameRenderer = SDL_CreateRenderer(gameWindow, -1, SDL_RENDERER_ACCELERATED);
+    gameRenderer = SDL_CreateRenderer(gameWindow, -1, SDL_RENDERER_ACCELERATED);
     if (gameRenderer == nullptr)
     {
         cout << "Game renderer could not be created! SDL Error: " << SDL_GetError() << endl;
@@ -188,13 +186,10 @@ void GameStarted(SDL_Renderer *renderer)
         return;
     }
 
-    // Set random seed for food placement
-    srand(static_cast<unsigned int>(time(0)));
-
     // Snake initialization
-    vector<SnakeSegment> snake = {{SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2}}; 
-    int snakeVelocity = 10;                                                    
-    int dirX = 1, dirY = 0;                                                   
+    vector<SnakeSegment> snake = {{SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2}};
+    int snakeVelocity = 10;
+    int dirX = 1, dirY = 0;
 
     // Wall dimensions
     const int wallThickness = 20;
@@ -203,6 +198,9 @@ void GameStarted(SDL_Renderer *renderer)
     SDL_Rect food = {rand() % ((SCREEN_WIDTH - wallThickness * 2) / snakeVelocity) * snakeVelocity + wallThickness,
                      rand() % ((SCREEN_HEIGHT - wallThickness * 2) / snakeVelocity) * snakeVelocity + wallThickness,
                      10, 10};
+
+    // Score initialization
+    int score = 0;
 
     // Main game loop
     bool gameRunning = true;
@@ -218,7 +216,6 @@ void GameStarted(SDL_Renderer *renderer)
             }
             else if (e.type == SDL_KEYDOWN)
             {
-                // Control snake with key button
                 switch (e.key.keysym.sym)
                 {
                 case SDLK_UP:
@@ -257,41 +254,37 @@ void GameStarted(SDL_Renderer *renderer)
             }
         }
 
-        // Snake movement
         SnakeSegment newHead = {snake[0].x + dirX * snakeVelocity, snake[0].y + dirY * snakeVelocity};
 
-        // Check if the snake hits the wall (game over condition)
         if (newHead.x < wallThickness || newHead.x >= SCREEN_WIDTH - wallThickness ||
             newHead.y < wallThickness || newHead.y >= SCREEN_HEIGHT - wallThickness)
         {
             cout << "Game Over! Snake hit the wall." << endl;
-            gameRunning = false; // End game
+            gameRunning = false;
         }
 
-        // Add new head and remove the tail (unless growing)
         snake.insert(snake.begin(), newHead);
 
-        // Check if snake eats food
         if (newHead.x == food.x && newHead.y == food.y)
         {
-            Mix_PlayChannel(-1, eatingSound, 0); //eating sound effect
+            Mix_PlayChannel(-1, eatingSound, 0);
 
-            // Generate new food in a random position within the wall boundaries
             food.x = rand() % ((SCREEN_WIDTH - wallThickness * 2) / snakeVelocity) * snakeVelocity + wallThickness;
             food.y = rand() % ((SCREEN_HEIGHT - wallThickness * 2) / snakeVelocity) * snakeVelocity + wallThickness;
+
+            score += 5;
         }
         else
         {
-            snake.pop_back(); // Remove tail if not growing
+            snake.pop_back();
         }
 
-        // Clear screen
         SDL_SetRenderDrawColor(gameRenderer, 100, 150, 200, 255);
         SDL_RenderClear(gameRenderer);
 
         // Draw walls
         SDL_SetRenderDrawColor(gameRenderer, 180, 180, 180, 0); 
-        SDL_Rect topWall = {0, 0, SCREEN_WIDTH, wallThickness};
+        SDL_Rect topWall = {0, 0, SCREEN_WIDTH, wallThickness+10};
         SDL_Rect bottomWall = {0, SCREEN_HEIGHT - wallThickness, SCREEN_WIDTH, wallThickness};
         SDL_Rect leftWall = {0, 0, wallThickness, SCREEN_HEIGHT};
         SDL_Rect rightWall = {SCREEN_WIDTH - wallThickness, 0, wallThickness, SCREEN_HEIGHT};
@@ -301,7 +294,7 @@ void GameStarted(SDL_Renderer *renderer)
         SDL_RenderFillRect(gameRenderer, &rightWall);
 
         // Draw snake
-        SDL_SetRenderDrawColor(gameRenderer, 0, 255, 0, 255); 
+        SDL_SetRenderDrawColor(gameRenderer, 0, 255, 0, 255);
         for (const SnakeSegment &segment : snake)
         {
             SDL_Rect rect = {segment.x, segment.y, snakeVelocity, snakeVelocity};
@@ -312,16 +305,24 @@ void GameStarted(SDL_Renderer *renderer)
         SDL_SetRenderDrawColor(gameRenderer, 255, 0, 0, 255);
         SDL_RenderFillRect(gameRenderer, &food);
 
+        SDL_Color white = {255, 255, 255, 255};
+        string scoreText = "Score: " + to_string(score);
+
+        // Render score within the top-left wall with a small offset
+        int scoreX = 1;    
+        int scoreY = 1;     
+        renderText(gameRenderer, scoreText.c_str(), scoreX, scoreY, white);
+
         SDL_RenderPresent(gameRenderer);
 
-        // Delay to control frame rate
         SDL_Delay(100);
     }
 
-    // Clean up after the game ends
     SDL_DestroyRenderer(gameRenderer);
     SDL_DestroyWindow(gameWindow);
 }
+
+
 
 void GameLoop(SDL_Renderer *renderer)
 {
