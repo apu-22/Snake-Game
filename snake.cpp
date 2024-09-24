@@ -166,6 +166,22 @@ bool handleExitButtonClick(int mouseX, int mouseY, int x, int y, int width, int 
     return (mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + height);
 }
 
+void drawCircle(SDL_Renderer *renderer, int centerX, int centerY, int radius)
+{
+    for (int w = 0; w < radius * 2; w++)
+    {
+        for (int h = 0; h < radius * 2; h++)
+        {
+            int dx = radius - w;
+            int dy = radius - h;
+            if ((dx * dx + dy * dy) <= (radius * radius))
+            {
+                SDL_RenderDrawPoint(renderer, centerX + dx, centerY + dy);
+            }
+        }
+    }
+}
+
 void GameStarted(SDL_Renderer *gameRenderer)
 {
     SDL_DestroyRenderer(renderer);
@@ -194,10 +210,15 @@ void GameStarted(SDL_Renderer *gameRenderer)
     // Wall dimensions
     const int wallThickness = 20;
 
-    // Food initialization
+    // Regular food initialization
     SDL_Rect food = {rand() % ((SCREEN_WIDTH - wallThickness * 2) / snakeVelocity) * snakeVelocity + wallThickness,
                      rand() % ((SCREEN_HEIGHT - wallThickness * 2) / snakeVelocity) * snakeVelocity + wallThickness,
                      10, 10};
+
+    // Bonus food initialization
+    bool bonusFoodActive = false;
+    SDL_Point bonusFood;
+    int bonusFoodRadius = 10;
 
     // Score initialization
     int score = 0;
@@ -265,6 +286,7 @@ void GameStarted(SDL_Renderer *gameRenderer)
 
         snake.insert(snake.begin(), newHead);
 
+        // Regular food is eaten and increment the food count
         if (newHead.x == food.x && newHead.y == food.y)
         {
             Mix_PlayChannel(-1, eatingSound, 0);
@@ -273,18 +295,42 @@ void GameStarted(SDL_Renderer *gameRenderer)
             food.y = rand() % ((SCREEN_HEIGHT - wallThickness * 2) / snakeVelocity) * snakeVelocity + wallThickness;
 
             score += 5;
+
+            static int foodCount = 0;
+            foodCount++;
+            if (foodCount % 5 == 0) // Spawn bonus food after every 5 regular foods
+            {
+                bonusFoodActive = true;
+                bonusFood.x = rand() % (SCREEN_WIDTH - wallThickness * 2 - 2 * bonusFoodRadius) + wallThickness + bonusFoodRadius;
+                bonusFood.y = rand() % (SCREEN_HEIGHT - wallThickness * 2 - 2 * bonusFoodRadius) + wallThickness + bonusFoodRadius;
+            }
         }
         else
         {
             snake.pop_back();
         }
 
+        // Check for collision with bonus food (if active)
+        if (bonusFoodActive)
+        {
+            int distX = newHead.x - bonusFood.x;
+            int distY = newHead.y - bonusFood.y;
+            int distance = sqrt(distX * distX + distY * distY);
+
+            if (distance < bonusFoodRadius + snakeVelocity / 2)
+            {
+                Mix_PlayChannel(-1, eatingSound, 0);
+                score += 10;
+                bonusFoodActive = false;
+            }
+        }
+
         SDL_SetRenderDrawColor(gameRenderer, 100, 150, 200, 255);
         SDL_RenderClear(gameRenderer);
 
         // Draw walls
-        SDL_SetRenderDrawColor(gameRenderer, 180, 180, 180, 0); 
-        SDL_Rect topWall = {0, 0, SCREEN_WIDTH, wallThickness+10};
+        SDL_SetRenderDrawColor(gameRenderer, 180, 180, 180, 0);
+        SDL_Rect topWall = {0, 0, SCREEN_WIDTH, wallThickness + 10};
         SDL_Rect bottomWall = {0, SCREEN_HEIGHT - wallThickness, SCREEN_WIDTH, wallThickness};
         SDL_Rect leftWall = {0, 0, wallThickness, SCREEN_HEIGHT};
         SDL_Rect rightWall = {SCREEN_WIDTH - wallThickness, 0, wallThickness, SCREEN_HEIGHT};
@@ -301,16 +347,23 @@ void GameStarted(SDL_Renderer *gameRenderer)
             SDL_RenderFillRect(gameRenderer, &rect);
         }
 
-        // Draw food
+        // Draw normal food
         SDL_SetRenderDrawColor(gameRenderer, 255, 0, 0, 255);
         SDL_RenderFillRect(gameRenderer, &food);
+
+        // Draw bonus food if active
+        if (bonusFoodActive)
+        {
+            SDL_SetRenderDrawColor(gameRenderer, 0, 0, 255, 255); // Bonus food color (blue)
+            drawCircle(gameRenderer, bonusFood.x, bonusFood.y, bonusFoodRadius);
+        }
 
         SDL_Color white = {255, 255, 255, 255};
         string scoreText = "Score: " + to_string(score);
 
         // Render score within the top-left wall with a small offset
-        int scoreX = 1;    
-        int scoreY = 1;     
+        int scoreX = 1;
+        int scoreY = 1;
         renderText(gameRenderer, scoreText.c_str(), scoreX, scoreY, white);
 
         SDL_RenderPresent(gameRenderer);
@@ -322,15 +375,13 @@ void GameStarted(SDL_Renderer *gameRenderer)
     SDL_DestroyWindow(gameWindow);
 }
 
-
-
 void GameLoop(SDL_Renderer *renderer)
 {
     SDL_Event e;
     bool quit = false;
     bool gameStarted = false;
 
-    SDL_Color white = {255, 255, 255, 255}; 
+    SDL_Color white = {255, 255, 255, 255};
 
     // Button size and position
     int buttonWidth = 200, buttonHeight = 50;
@@ -341,7 +392,7 @@ void GameLoop(SDL_Renderer *renderer)
     int exitY = SCREEN_HEIGHT / 2 + 50;
 
     // Draw the initial screen (background and buttons)
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); 
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
     loadAndRenderImage(renderer, "image/cover_photo.png");
