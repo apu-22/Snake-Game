@@ -285,11 +285,28 @@ void GameStarted(SDL_Renderer *gameRenderer)
 
         SnakeSegment newHead = {snake[0].x + dirX * snakeVelocity, snake[0].y + dirY * snakeVelocity};
 
+        // check for collision with wall
         if (newHead.x < wallThickness || newHead.x >= SCREEN_WIDTH - wallThickness ||
             newHead.y < wallThickness || newHead.y >= SCREEN_HEIGHT - wallThickness)
         {
             cout << "Game Over! Snake hit the wall." << endl;
             gameRunning = false;
+        }
+
+         // Check for collision with itself
+        for (size_t i = 1; i < snake.size(); i++)
+        {
+            if (newHead.x == snake[i].x && newHead.y == snake[i].y)
+            {
+                cout << "Game Over! Snake collided with itself." << endl;
+                gameRunning = false;
+                break;
+            }
+        }
+
+        if (!gameRunning)
+        {
+            break;
         }
 
         snake.insert(snake.begin(), newHead);
@@ -318,7 +335,7 @@ void GameStarted(SDL_Renderer *gameRenderer)
             snake.pop_back();
         }
 
-        // Check for collision with bonus food (if active)
+        // Check for collision with bonus food
         if (bonusFoodActive)
         {
             int distX = newHead.x - bonusFood.x;
