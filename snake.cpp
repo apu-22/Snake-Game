@@ -75,7 +75,7 @@ bool initializeSDL(SDL_Window *&window, SDL_Renderer *&renderer)
         return false;
     }
 
-    eatingSound = Mix_LoadWAV("audio/eating_sound.mp3");
+    eatingSound = Mix_LoadWAV("audio/eating_sound.wav");
     if (eatingSound == nullptr)
     {
         cout << "Failed to load eating sound effect! SDL_mixer Error: " << Mix_GetError() << endl;
@@ -160,6 +160,19 @@ void renderExitButton(SDL_Renderer *renderer, int x, int y, int width, int heigh
     SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
     SDL_RenderFillRect(renderer, &exitRect);
     renderText(renderer, "Exit Game", x + 30, y + 10, textColor);
+}
+
+void renderGameOverButton(SDL_Renderer *renderer, int x, int y, int width, int height, SDL_Color textColor)
+{
+    SDL_Rect gameOverRect = {x, y, width, height};
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    SDL_RenderFillRect(renderer, &gameOverRect);
+    renderText(renderer, "Game Over", x + 30, y + 10, textColor);
+}
+
+bool handleGameOverButtonClick(int mouseX, int mouseY, int x, int y, int width, int height)
+{
+    return (mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + height);
 }
 
 // Function to handle mouse click for the "Start Game" button
@@ -285,22 +298,83 @@ void GameStarted(SDL_Renderer *gameRenderer)
 
         SnakeSegment newHead = {snake[0].x + dirX * snakeVelocity, snake[0].y + dirY * snakeVelocity};
 
-        // check for collision with wall
         if (newHead.x < wallThickness || newHead.x >= SCREEN_WIDTH - wallThickness ||
             newHead.y < wallThickness || newHead.y >= SCREEN_HEIGHT - wallThickness)
         {
-            cout << "Game Over! Snake hit the wall." << endl;
-            gameRunning = false;
-        }
+            bool gameOver = true;
+            SDL_Color white = {255, 255, 255, 255};
 
-         // Check for collision with itself
+            // Render "Game Over" button
+            renderGameOverButton(gameRenderer, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 25, 200, 50, white);
+            SDL_RenderPresent(gameRenderer);
+
+            // Wait for the user to click "Game Over"
+            SDL_Event event;
+            while (gameOver)
+            {
+                while (SDL_PollEvent(&event))
+                {
+                    if (event.type == SDL_QUIT)
+                    {
+                        gameOver = false;
+                    }
+                    else if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT)
+                    {
+                        int mouseX = event.button.x;
+                        int mouseY = event.button.y;
+
+                        // Handle "Game Over" button click
+                        if (handleGameOverButtonClick(mouseX, mouseY, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 25, 200, 50))
+                        {
+                            gameOver = false; // Exit the game
+                        }
+                    }
+                }
+            }
+
+            break;
+        }
+        // Check for collision with itself
         for (size_t i = 1; i < snake.size(); i++)
         {
             if (newHead.x == snake[i].x && newHead.y == snake[i].y)
             {
-                cout << "Game Over! Snake collided with itself." << endl;
-                gameRunning = false;
-                break;
+                bool gameOver = true;
+                SDL_Color white = {255, 255, 255, 255};
+
+                // Render "Game Over" button
+                renderGameOverButton(gameRenderer, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 25, 200, 50, white);
+                SDL_RenderPresent(gameRenderer);
+
+                // Wait for the user to click "Game Over"
+                SDL_Event event;
+                while (gameOver)
+                {
+                    while (SDL_PollEvent(&event))
+                    {
+                        if (event.type == SDL_QUIT)
+                        {
+                            gameOver = false;
+                            gameRunning = false;
+                            return;
+                        }
+                        else if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT)
+                        {
+                            int mouseX = event.button.x;
+                            int mouseY = event.button.y;
+
+                            // Handle "Game Over" button click
+                            if (handleGameOverButtonClick(mouseX, mouseY, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 25, 200, 50))
+                            {
+                                gameOver = false; // Exit the game
+                                gameRunning = false;
+                                return;
+                            }
+                        }
+                    }
+                }
+
+                break; // Break out of the game loop
             }
         }
 
