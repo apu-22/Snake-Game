@@ -23,6 +23,7 @@ Mix_Music *backgroundMusic = nullptr;
 TTF_Font *font = nullptr;
 Mix_Chunk *eatingSound = nullptr;
 Mix_Chunk *bonusEatingSound = nullptr;
+Mix_Chunk *gameOverSound = nullptr;
 
 bool initializeSDL(SDL_Window *&window, SDL_Renderer *&renderer)
 {
@@ -86,6 +87,13 @@ bool initializeSDL(SDL_Window *&window, SDL_Renderer *&renderer)
     if (eatingSound == nullptr)
     {
         cout << "Failed to load eating sound effect! SDL_mixer Error: " << Mix_GetError() << endl;
+        return false;
+    }
+
+    gameOverSound = Mix_LoadWAV("audio/game_over_sound.wav");
+    if (eatingSound == nullptr)
+    {
+        cout << "Failed to load game over sound effect! SDL_mixer Error: " << Mix_GetError() << endl;
         return false;
     }
 
@@ -171,7 +179,7 @@ void renderGameOverButton(SDL_Renderer *renderer, int x, int y, int width, int h
 }
 
 bool handleGameOverButtonClick(int mouseX, int mouseY, int x, int y, int width, int height)
-{
+{    
     return (mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + height);
 }
 
@@ -301,6 +309,8 @@ void GameStarted(SDL_Renderer *gameRenderer)
         if (newHead.x < wallThickness || newHead.x >= SCREEN_WIDTH - wallThickness ||
             newHead.y < wallThickness || newHead.y >= SCREEN_HEIGHT - wallThickness)
         {
+            Mix_PlayChannel(-1, gameOverSound, 0);
+            
             bool gameOver = true;
             SDL_Color white = {255, 255, 255, 255};
 
@@ -339,6 +349,8 @@ void GameStarted(SDL_Renderer *gameRenderer)
         {
             if (newHead.x == snake[i].x && newHead.y == snake[i].y)
             {
+                Mix_PlayChannel(-1, gameOverSound, 0);
+
                 bool gameOver = true;
                 SDL_Color white = {255, 255, 255, 255};
 
