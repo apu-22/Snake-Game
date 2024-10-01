@@ -11,21 +11,12 @@ void renderText(SDL_Renderer *renderer, const char *message, int x, int y, SDL_C
 void renderStartButton(SDL_Renderer *renderer, int x, int y, int width, int height, SDL_Color textColor);
 void renderExitButton(SDL_Renderer *renderer, int x, int y, int width, int height, SDL_Color textColor);
 void renderGameOverButton(SDL_Renderer *renderer, int x, int y, int width, int height, SDL_Color textColor);
+void renderRestartButton(SDL_Renderer *renderer, int x, int y, int width, int height, SDL_Color textColor);
 void drawCircle(SDL_Renderer *renderer, int centerX, int centerY, int radius);
 void displayGameOverScreen(SDL_Renderer *renderer, int score);
-void GameStarted(SDL_Renderer* renderer);
+void GameStarted(SDL_Renderer *renderer);
 void GameLoop(SDL_Renderer *renderer);
 void cleanUp(SDL_Window *window, SDL_Renderer *renderer);
-
-struct SnakeSegment
-{
-    int x, y;
-};
-
-using namespace std;
-
-const int SCREEN_WIDTH = 800;
-const int SCREEN_HEIGHT = 600;
 
 SDL_Window *window = nullptr;
 SDL_Renderer *renderer = nullptr;
@@ -34,6 +25,16 @@ TTF_Font *font = nullptr;
 Mix_Chunk *eatingSound = nullptr;
 Mix_Chunk *bonusEatingSound = nullptr;
 Mix_Chunk *gameOverSound = nullptr;
+
+const int SCREEN_WIDTH = 800;
+const int SCREEN_HEIGHT = 600;
+
+struct SnakeSegment
+{
+    int x, y;
+};
+
+using namespace std;
 
 bool initializeSDL(SDL_Window *&window, SDL_Renderer *&renderer)
 {
@@ -94,7 +95,7 @@ bool initializeSDL(SDL_Window *&window, SDL_Renderer *&renderer)
     }
 
     bonusEatingSound = Mix_LoadWAV("audio/bonus_eating_sound.mp3");
-    if (eatingSound == nullptr)
+    if (bonusEatingSound == nullptr)
     {
         cout << "Failed to load eating sound effect! SDL_mixer Error: " << Mix_GetError() << endl;
         return false;
@@ -188,6 +189,21 @@ void renderGameOverButton(SDL_Renderer *renderer, int x, int y, int width, int h
     renderText(renderer, "Game Over", x + 30, y + 10, textColor);
 }
 
+// Function to render the "Restart Game" button
+void renderRestartButton(SDL_Renderer *renderer, int x, int y, int width, int height, SDL_Color textColor)
+{
+    SDL_Rect restartRect = {x, y, width, height};
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    SDL_RenderFillRect(renderer, &restartRect);
+    renderText(renderer, "Restart Game", x + 30, y + 10, textColor);
+}
+
+// Function to handle mouse click for the "Restart Game" button
+bool handleRestartButtonClick(int mouseX, int mouseY, int x, int y, int width, int height)
+{
+    return (mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + height);
+}
+
 bool handleGameOverButtonClick(int mouseX, int mouseY, int x, int y, int width, int height)
 {
     return (mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + height);
@@ -232,10 +248,13 @@ void displayGameOverScreen(SDL_Renderer *renderer, int score)
     // Display the final score
     SDL_Color white = {255, 255, 255, 255};
     string scoreText = "Final Score: " + to_string(score);
+    renderText(renderer, scoreText.c_str(), SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2, white);
 
-    renderText(renderer, scoreText.c_str(), SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 + 50, white);
+    // Render buttons for "Restart Game" and "Exit Game"
+    renderRestartButton(renderer, SCREEN_WIDTH / 2 - 120, SCREEN_HEIGHT / 2 + 100, 240, 50, white);
+    renderExitButton(renderer, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 + 160, 200, 50, white);
 
-    SDL_RenderPresent(renderer); 
+    SDL_RenderPresent(renderer);
 
     while (gameOverRunning)
     {
@@ -244,6 +263,23 @@ void displayGameOverScreen(SDL_Renderer *renderer, int score)
             if (event.type == SDL_QUIT)
             {
                 gameOverRunning = false;
+            }
+            else if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT)
+            {
+                int mouseX = event.button.x;
+                int mouseY = event.button.y;
+
+                // Handle "Restart Game" button click
+                if (handleRestartButtonClick(mouseX, mouseY, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 + 100, 200, 50))
+                {
+                    gameOverRunning = false;
+                    GameStarted(renderer); // Restart the game
+                }
+                // Handle "Exit Game" button click
+                else if (handleExitButtonClick(mouseX, mouseY, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 + 160, 200, 50))
+                {
+                    gameOverRunning = false; // Exit the game
+                }
             }
         }
     }
@@ -419,8 +455,8 @@ void GameStarted(SDL_Renderer *gameRenderer)
                             // Handle "Game Over" button click
                             if (handleGameOverButtonClick(mouseX, mouseY, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 25, 200, 50))
                             {
-                                gameOver = false; // Exit the game
-                                gameRunning = false;
+                                gameOver = false; 
+                                gameRunning = false;//Exit the game
                                 displayGameOverScreen(gameRenderer, score);
 
                                 return;
