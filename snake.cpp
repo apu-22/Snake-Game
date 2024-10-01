@@ -7,6 +7,16 @@
 #include <cstdlib>
 #include <ctime>
 
+void renderText(SDL_Renderer *renderer, const char *message, int x, int y, SDL_Color color);
+void renderStartButton(SDL_Renderer *renderer, int x, int y, int width, int height, SDL_Color textColor);
+void renderExitButton(SDL_Renderer *renderer, int x, int y, int width, int height, SDL_Color textColor);
+void renderGameOverButton(SDL_Renderer *renderer, int x, int y, int width, int height, SDL_Color textColor);
+void drawCircle(SDL_Renderer *renderer, int centerX, int centerY, int radius);
+void displayGameOverScreen(SDL_Renderer *renderer, int score);
+void GameStarted(SDL_Renderer* renderer);
+void GameLoop(SDL_Renderer *renderer);
+void cleanUp(SDL_Window *window, SDL_Renderer *renderer);
+
 struct SnakeSegment
 {
     int x, y;
