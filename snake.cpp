@@ -179,7 +179,7 @@ void renderGameOverButton(SDL_Renderer *renderer, int x, int y, int width, int h
 }
 
 bool handleGameOverButtonClick(int mouseX, int mouseY, int x, int y, int width, int height)
-{    
+{
     return (mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + height);
 }
 
@@ -206,6 +206,26 @@ void drawCircle(SDL_Renderer *renderer, int centerX, int centerY, int radius)
             if ((dx * dx + dy * dy) <= (radius * radius))
             {
                 SDL_RenderDrawPoint(renderer, centerX + dx, centerY + dy);
+            }
+        }
+    }
+}
+
+void displayGameOverScreen(SDL_Renderer *renderer)
+{
+    bool gameOverRunning = true;
+    SDL_Event event;
+
+    // Load and render the game over image
+    loadAndRenderImage(renderer, "image/game_over_screen.png");
+
+    while (gameOverRunning)
+    {
+        while (SDL_PollEvent(&event))
+        {
+            if (event.type == SDL_QUIT)
+            {
+                gameOverRunning = false;
             }
         }
     }
@@ -309,8 +329,9 @@ void GameStarted(SDL_Renderer *gameRenderer)
         if (newHead.x < wallThickness || newHead.x >= SCREEN_WIDTH - wallThickness ||
             newHead.y < wallThickness || newHead.y >= SCREEN_HEIGHT - wallThickness)
         {
+            Mix_HaltMusic();
             Mix_PlayChannel(-1, gameOverSound, 0);
-            
+
             bool gameOver = true;
             SDL_Color white = {255, 255, 255, 255};
 
@@ -337,6 +358,7 @@ void GameStarted(SDL_Renderer *gameRenderer)
                         if (handleGameOverButtonClick(mouseX, mouseY, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 25, 200, 50))
                         {
                             gameOver = false; // Exit the game
+                            displayGameOverScreen(gameRenderer);
                         }
                     }
                 }
@@ -349,6 +371,7 @@ void GameStarted(SDL_Renderer *gameRenderer)
         {
             if (newHead.x == snake[i].x && newHead.y == snake[i].y)
             {
+                Mix_HaltMusic();
                 Mix_PlayChannel(-1, gameOverSound, 0);
 
                 bool gameOver = true;
@@ -380,6 +403,8 @@ void GameStarted(SDL_Renderer *gameRenderer)
                             {
                                 gameOver = false; // Exit the game
                                 gameRunning = false;
+                                displayGameOverScreen(gameRenderer);
+
                                 return;
                             }
                         }
@@ -551,6 +576,9 @@ void GameLoop(SDL_Renderer *renderer)
 
 void cleanUp(SDL_Window *window, SDL_Renderer *renderer)
 {
+    Mix_FreeChunk(gameOverSound);
+    gameOverSound = nullptr;
+
     Mix_FreeChunk(eatingSound);
     eatingSound = nullptr;
 
