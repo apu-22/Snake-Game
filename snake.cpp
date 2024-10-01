@@ -211,13 +211,21 @@ void drawCircle(SDL_Renderer *renderer, int centerX, int centerY, int radius)
     }
 }
 
-void displayGameOverScreen(SDL_Renderer *renderer)
+void displayGameOverScreen(SDL_Renderer *renderer, int score)
 {
     bool gameOverRunning = true;
     SDL_Event event;
 
     // Load and render the game over image
     loadAndRenderImage(renderer, "image/game_over_screen.png");
+
+    // Display the final score
+    SDL_Color white = {255, 255, 255, 255};
+    string scoreText = "Final Score: " + to_string(score);
+
+    renderText(renderer, scoreText.c_str(), SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 + 50, white);
+
+    SDL_RenderPresent(renderer); 
 
     while (gameOverRunning)
     {
@@ -358,7 +366,7 @@ void GameStarted(SDL_Renderer *gameRenderer)
                         if (handleGameOverButtonClick(mouseX, mouseY, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 25, 200, 50))
                         {
                             gameOver = false; // Exit the game
-                            displayGameOverScreen(gameRenderer);
+                            displayGameOverScreen(gameRenderer, score);
                         }
                     }
                 }
@@ -403,7 +411,7 @@ void GameStarted(SDL_Renderer *gameRenderer)
                             {
                                 gameOver = false; // Exit the game
                                 gameRunning = false;
-                                displayGameOverScreen(gameRenderer);
+                                displayGameOverScreen(gameRenderer, score);
 
                                 return;
                             }
