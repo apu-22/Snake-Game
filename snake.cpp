@@ -167,7 +167,8 @@ bool playBackgroundMusic(const char *musicPath)
 void renderStartButton(SDL_Renderer *renderer, int x, int y, int width, int height, SDL_Color textColor)
 {
     SDL_Rect startRect = {x, y, width, height};
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    // SDL_SetRenderDrawColor(renderer, 138, 43, 226, 255);
+    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
     SDL_RenderFillRect(renderer, &startRect);
     renderText(renderer, "Start Game", x + 30, y + 10, textColor);
 }
@@ -176,7 +177,7 @@ void renderStartButton(SDL_Renderer *renderer, int x, int y, int width, int heig
 void renderExitButton(SDL_Renderer *renderer, int x, int y, int width, int height, SDL_Color textColor)
 {
     SDL_Rect exitRect = {x, y, width, height};
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    SDL_SetRenderDrawColor(renderer, 139, 0, 0, 255);
     SDL_RenderFillRect(renderer, &exitRect);
     renderText(renderer, "Exit Game", x + 30, y + 10, textColor);
 }
@@ -184,7 +185,7 @@ void renderExitButton(SDL_Renderer *renderer, int x, int y, int width, int heigh
 void renderGameOverButton(SDL_Renderer *renderer, int x, int y, int width, int height, SDL_Color textColor)
 {
     SDL_Rect gameOverRect = {x, y, width, height};
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    SDL_SetRenderDrawColor(renderer, 128, 128, 128, 255);
     SDL_RenderFillRect(renderer, &gameOverRect);
     renderText(renderer, "Game Over", x + 30, y + 10, textColor);
 }
@@ -193,7 +194,7 @@ void renderGameOverButton(SDL_Renderer *renderer, int x, int y, int width, int h
 void renderRestartButton(SDL_Renderer *renderer, int x, int y, int width, int height, SDL_Color textColor)
 {
     SDL_Rect restartRect = {x, y, width, height};
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    SDL_SetRenderDrawColor(renderer, 255, 165, 0, 255);
     SDL_RenderFillRect(renderer, &restartRect);
     renderText(renderer, "Restart Game", x + 30, y + 10, textColor);
 }
@@ -219,6 +220,13 @@ bool handleStartButtonClick(int mouseX, int mouseY, int x, int y, int width, int
 bool handleExitButtonClick(int mouseX, int mouseY, int x, int y, int width, int height)
 {
     return (mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + height);
+}
+
+// Utility function to check if the mouse is over a button
+bool isMouseOverButton(int mouseX, int mouseY, int buttonX, int buttonY, int buttonWidth, int buttonHeight)
+{
+    return (mouseX >= buttonX && mouseX <= buttonX + buttonWidth &&
+            mouseY >= buttonY && mouseY <= buttonY + buttonHeight);
 }
 
 void drawCircle(SDL_Renderer *renderer, int centerX, int centerY, int radius)
@@ -247,12 +255,29 @@ void displayGameOverScreen(SDL_Renderer *renderer, int score)
 
     // Display the final score
     SDL_Color white = {255, 255, 255, 255};
+    SDL_Color black = {0, 0, 0, 255};
+
     string scoreText = "Final Score: " + to_string(score);
     renderText(renderer, scoreText.c_str(), SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2, white);
 
+    // Button size and position
+    int buttonWidth = 240, buttonHeight = 50;
+    int restartX = SCREEN_WIDTH / 2 - 120;
+    int restartY = SCREEN_HEIGHT / 2 + 100;
+
+    int exitX = SCREEN_WIDTH / 2 - 100;
+    int exitY = SCREEN_HEIGHT / 2 + 160;
+
+    // Create cursors
+    SDL_Cursor *arrowCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+    SDL_Cursor *handCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+
+    // Set the default cursor
+    SDL_SetCursor(arrowCursor);
+
     // Render buttons for "Restart Game" and "Exit Game"
-    renderRestartButton(renderer, SCREEN_WIDTH / 2 - 120, SCREEN_HEIGHT / 2 + 100, 240, 50, white);
-    renderExitButton(renderer, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 + 160, 200, 50, white);
+    renderRestartButton(renderer, restartX, restartY, buttonWidth, buttonHeight, black);
+    renderExitButton(renderer, exitX, exitY, 200, buttonHeight, white);
 
     SDL_RenderPresent(renderer);
 
@@ -264,21 +289,41 @@ void displayGameOverScreen(SDL_Renderer *renderer, int score)
             {
                 gameOverRunning = false;
             }
+            else if (event.type == SDL_MOUSEMOTION)
+            {
+                int mouseX = event.motion.x;
+                int mouseY = event.motion.y;
+
+                // Check if mouse is over "Start Game" or "Exit Game" button
+                bool restartButton = isMouseOverButton(mouseX, mouseY, restartX, restartY, buttonWidth, buttonHeight);
+                bool overExitButton = isMouseOverButton(mouseX, mouseY, exitX, exitY, 200, buttonHeight);
+
+                if (restartButton || overExitButton)
+                {
+                    SDL_SetCursor(handCursor);
+                }
+                else
+                {
+                    SDL_SetCursor(arrowCursor);
+                }
+            }
             else if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT)
             {
                 int mouseX = event.button.x;
                 int mouseY = event.button.y;
 
                 // Handle "Restart Game" button click
-                if (handleRestartButtonClick(mouseX, mouseY, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 + 100, 200, 50))
+                if (handleRestartButtonClick(mouseX, mouseY, restartX, restartY, buttonWidth, buttonHeight))
                 {
                     gameOverRunning = false;
-                    GameStarted(renderer); // Restart the game
+                    SDL_FreeCursor(arrowCursor);
+                    SDL_FreeCursor(handCursor);
+                    GameStarted(renderer);
                 }
                 // Handle "Exit Game" button click
-                else if (handleExitButtonClick(mouseX, mouseY, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 + 160, 200, 50))
+                else if (handleExitButtonClick(mouseX, mouseY, exitX, exitY, 200, buttonHeight))
                 {
-                    gameOverRunning = false; // Exit the game
+                    gameOverRunning = false;
                 }
             }
         }
@@ -387,13 +432,22 @@ void GameStarted(SDL_Renderer *gameRenderer)
             Mix_PlayChannel(-1, gameOverSound, 0);
 
             bool gameOver = true;
-            SDL_Color white = {255, 255, 255, 255};
+            SDL_Color orange = {255, 165, 0, 255};
+
+            SDL_Cursor *arrowCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+            SDL_Cursor *handCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+
+            // Set the default cursor
+            SDL_SetCursor(arrowCursor);
+
+            int buttonWidth = 200, buttonHeight = 50;
+            int overX = SCREEN_WIDTH / 2 - 100;
+            int overY = SCREEN_HEIGHT / 2 - 50;
 
             // Render "Game Over" button
-            renderGameOverButton(gameRenderer, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 25, 200, 50, white);
+            renderGameOverButton(gameRenderer, overX, overY, buttonWidth, buttonHeight, orange);
             SDL_RenderPresent(gameRenderer);
 
-            // Wait for the user to click "Game Over"
             SDL_Event event;
             while (gameOver)
             {
@@ -403,21 +457,39 @@ void GameStarted(SDL_Renderer *gameRenderer)
                     {
                         gameOver = false;
                     }
+                    else if (event.type == SDL_MOUSEMOTION)
+                    {
+                        int mouseX = event.motion.x;
+                        int mouseY = event.motion.y;
+
+                        // Check if mouse is over "Game Over" button
+                        bool gameOverButton = isMouseOverButton(mouseX, mouseY, overX, overY, buttonWidth, buttonHeight);
+                        if (gameOverButton)
+                        {
+                            SDL_SetCursor(handCursor);
+                        }
+                        else
+                        {
+                            SDL_SetCursor(arrowCursor);
+                        }
+                    }
+
                     else if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT)
                     {
                         int mouseX = event.button.x;
                         int mouseY = event.button.y;
 
                         // Handle "Game Over" button click
-                        if (handleGameOverButtonClick(mouseX, mouseY, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 25, 200, 50))
+                        if (handleGameOverButtonClick(mouseX, mouseY, overX, overY, buttonWidth, buttonHeight))
                         {
-                            gameOver = false; // Exit the game
+                            gameOver = false;
+                            SDL_FreeCursor(arrowCursor);
+                            SDL_FreeCursor(handCursor);
                             displayGameOverScreen(gameRenderer, score);
                         }
                     }
                 }
             }
-
             break;
         }
         // Check for collision with itself
@@ -429,13 +501,22 @@ void GameStarted(SDL_Renderer *gameRenderer)
                 Mix_PlayChannel(-1, gameOverSound, 0);
 
                 bool gameOver = true;
-                SDL_Color white = {255, 255, 255, 255};
+                SDL_Color orange = {255, 165, 0, 255};
+
+                SDL_Cursor *arrowCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+                SDL_Cursor *handCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+
+                // Set the default cursor
+                SDL_SetCursor(arrowCursor);
+
+                int buttonWidth = 200, buttonHeight = 50;
+                int overX = SCREEN_WIDTH / 2 - 100;
+                int overY = SCREEN_HEIGHT / 2 - 50;
 
                 // Render "Game Over" button
-                renderGameOverButton(gameRenderer, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 25, 200, 50, white);
+                renderGameOverButton(gameRenderer, overX, overY, buttonWidth, buttonHeight, orange);
                 SDL_RenderPresent(gameRenderer);
 
-                // Wait for the user to click "Game Over"
                 SDL_Event event;
                 while (gameOver)
                 {
@@ -447,6 +528,22 @@ void GameStarted(SDL_Renderer *gameRenderer)
                             gameRunning = false;
                             return;
                         }
+                        else if (event.type == SDL_MOUSEMOTION)
+                        {
+                            int mouseX = event.motion.x;
+                            int mouseY = event.motion.y;
+
+                            // Check if mouse is over "Game Over" button
+                            bool gameOverButton = isMouseOverButton(mouseX, mouseY, overX, overY, buttonWidth, buttonHeight);
+                            if (gameOverButton)
+                            {
+                                SDL_SetCursor(handCursor);
+                            }
+                            else
+                            {
+                                SDL_SetCursor(arrowCursor);
+                            }
+                        }
                         else if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT)
                         {
                             int mouseX = event.button.x;
@@ -455,17 +552,18 @@ void GameStarted(SDL_Renderer *gameRenderer)
                             // Handle "Game Over" button click
                             if (handleGameOverButtonClick(mouseX, mouseY, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 25, 200, 50))
                             {
-                                gameOver = false; 
-                                gameRunning = false;//Exit the game
+                                gameOver = false;
+                                gameRunning = false;
+                                SDL_FreeCursor(arrowCursor);
+                                SDL_FreeCursor(handCursor);
                                 displayGameOverScreen(gameRenderer, score);
-
                                 return;
                             }
                         }
                     }
                 }
 
-                break; // Break out of the game loop
+                break;
             }
         }
 
@@ -488,7 +586,7 @@ void GameStarted(SDL_Renderer *gameRenderer)
 
             static int foodCount = 0;
             foodCount++;
-            if (foodCount % 5 == 0) // Spawn bonus food after every 5 regular foods
+            if (foodCount % 5 == 0)
             {
                 bonusFoodActive = true;
                 bonusFood.x = rand() % (SCREEN_WIDTH - wallThickness * 2 - 2 * bonusFoodRadius) + wallThickness + bonusFoodRadius;
@@ -572,6 +670,7 @@ void GameLoop(SDL_Renderer *renderer)
     bool gameStarted = false;
 
     SDL_Color white = {255, 255, 255, 255};
+    SDL_Color black = {0, 0, 0, 255};
 
     // Button size and position
     int buttonWidth = 200, buttonHeight = 50;
@@ -581,6 +680,13 @@ void GameLoop(SDL_Renderer *renderer)
     int exitX = SCREEN_WIDTH / 2 - 100;
     int exitY = SCREEN_HEIGHT / 2 + 50;
 
+    // Create cursors
+    SDL_Cursor *arrowCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+    SDL_Cursor *handCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+
+    // Set the default cursor
+    SDL_SetCursor(arrowCursor);
+
     // Draw the initial screen (background and buttons)
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
@@ -588,7 +694,7 @@ void GameLoop(SDL_Renderer *renderer)
     loadAndRenderImage(renderer, "image/cover_photo.png");
 
     // Render buttons
-    renderStartButton(renderer, startX, startY, buttonWidth, buttonHeight, white);
+    renderStartButton(renderer, startX, startY, buttonWidth, buttonHeight, black);
     renderExitButton(renderer, exitX, exitY, buttonWidth, buttonHeight, white);
 
     SDL_RenderPresent(renderer); // Present the rendered content
@@ -601,6 +707,24 @@ void GameLoop(SDL_Renderer *renderer)
             {
                 quit = true;
             }
+            else if (e.type == SDL_MOUSEMOTION)
+            {
+                int mouseX = e.motion.x;
+                int mouseY = e.motion.y;
+
+                // Check if mouse is over "Start Game" or "Exit Game" button
+                bool overStartButton = isMouseOverButton(mouseX, mouseY, startX, startY, buttonWidth, buttonHeight);
+                bool overExitButton = isMouseOverButton(mouseX, mouseY, exitX, exitY, buttonWidth, buttonHeight);
+
+                if (overStartButton || overExitButton)
+                {
+                    SDL_SetCursor(handCursor);
+                }
+                else
+                {
+                    SDL_SetCursor(arrowCursor);
+                }
+            }
             else if (e.type == SDL_MOUSEBUTTONUP && e.button.button == SDL_BUTTON_LEFT)
             {
                 int mouseX = e.button.x;
@@ -610,16 +734,19 @@ void GameLoop(SDL_Renderer *renderer)
                 if (handleStartButtonClick(mouseX, mouseY, startX, startY, buttonWidth, buttonHeight))
                 {
                     gameStarted = true;
-                    quit = true; // Exit the loop and start the game
+                    quit = true;
                 }
                 // Handle "Exit Game" button click
                 else if (handleExitButtonClick(mouseX, mouseY, exitX, exitY, buttonWidth, buttonHeight))
                 {
-                    quit = true; // Exit the loop and end the program
+                    quit = true;
                 }
             }
         }
     }
+
+    SDL_FreeCursor(arrowCursor);
+    SDL_FreeCursor(handCursor);
 
     if (gameStarted)
     {
@@ -632,6 +759,9 @@ void cleanUp(SDL_Window *window, SDL_Renderer *renderer)
 {
     Mix_FreeChunk(gameOverSound);
     gameOverSound = nullptr;
+
+    Mix_FreeChunk(bonusEatingSound);
+    bonusEatingSound = nullptr;
 
     Mix_FreeChunk(eatingSound);
     eatingSound = nullptr;
