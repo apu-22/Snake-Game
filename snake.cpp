@@ -13,7 +13,6 @@ void renderExitButton(SDL_Renderer *renderer, int x, int y, int width, int heigh
 void renderGameOverButton(SDL_Renderer *renderer, int x, int y, int width, int height, SDL_Color textColor);
 void renderRestartButton(SDL_Renderer *renderer, int x, int y, int width, int height, SDL_Color textColor);
 void drawCircle(SDL_Renderer *renderer, int centerX, int centerY, int radius);
-void drawFilledCircle(SDL_Renderer *renderer, int x, int y, int radius);
 void displayGameOverScreen(SDL_Renderer *renderer, int score);
 void GameStarted(SDL_Renderer *renderer);
 void GameLoop(SDL_Renderer *renderer);
@@ -268,6 +267,7 @@ void displayGameOverScreen(SDL_Renderer *renderer, int score)
     bool gameOverRunning = true;
     SDL_Event event;
 
+    // Load and render the game over image
     loadAndRenderImage(renderer, "image/game_over_screen.png");
 
     // Display the final score
@@ -647,24 +647,31 @@ void GameStarted(SDL_Renderer *gameRenderer)
         // Draw snake with rounded segments, gradient effect, and outline
         for (size_t i = 0; i < snake.size(); i++)
         {
-            // Gradually darken the color for each body segment
-            int colorIntensity = 200 - (i * 10);
+            int colorIntensity = 200 - (int)(pow(i, 1.5) * 5);
+            int glowIntensity = colorIntensity + 30;
 
             if (i == 0)
             {
-                SDL_SetRenderDrawColor(gameRenderer, 128, 128, 128, 255);                                                              
-                drawFilledCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2 + 1); 
+                SDL_SetRenderDrawColor(gameRenderer, 0, glowIntensity, 0, 100); 
+                drawFilledCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2 + 2);
+
+                SDL_SetRenderDrawColor(gameRenderer, 128, 128, 128, 255);                                                              // Black outline for head
+                drawFilledCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2 + 1); // 2px outline
 
                 // Draw head with bright green
                 SDL_SetRenderDrawColor(gameRenderer, 0, 255, 0, 255);
                 drawFilledCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2);
 
-                SDL_SetRenderDrawColor(gameRenderer, 0, 0, 0, 255);                                                      
-                SDL_RenderDrawPoint(gameRenderer, snake[i].x + snakeVelocity / 4, snake[i].y + snakeVelocity / 4);      
-                SDL_RenderDrawPoint(gameRenderer, snake[i].x + (3 * snakeVelocity) / 4, snake[i].y + snakeVelocity / 4); 
+                // Draw eyes
+                SDL_SetRenderDrawColor(gameRenderer, 0, 0, 0, 255);                                                      // Black color for eyes
+                SDL_RenderDrawPoint(gameRenderer, snake[i].x + snakeVelocity / 4, snake[i].y + snakeVelocity / 4);       // Left eye
+                SDL_RenderDrawPoint(gameRenderer, snake[i].x + (3 * snakeVelocity) / 4, snake[i].y + snakeVelocity / 4); // Right eye
             }
             else
             {
+                SDL_SetRenderDrawColor(gameRenderer, 0, glowIntensity, 0, 100); 
+                drawFilledCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2 + 2);
+
                 SDL_SetRenderDrawColor(gameRenderer, 128, 128, 128, 255);                                                              // Black outline for body
                 drawFilledCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2 + 1); // 2px outline
 
@@ -680,7 +687,7 @@ void GameStarted(SDL_Renderer *gameRenderer)
         // Draw bonus food if active
         if (bonusFoodActive)
         {
-            SDL_SetRenderDrawColor(gameRenderer, 0, 0, 255, 255); 
+            SDL_SetRenderDrawColor(gameRenderer, 0, 0, 255, 255); // Bonus food color (blue)
             drawCircle(gameRenderer, bonusFood.x, bonusFood.y, bonusFoodRadius);
         }
 
