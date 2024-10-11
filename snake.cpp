@@ -628,10 +628,19 @@ void GameStarted(SDL_Renderer *gameRenderer)
         SDL_RenderFillRect(gameRenderer, &rightWall);
 
         // Draw snake
-        SDL_SetRenderDrawColor(gameRenderer, 0, 255, 0, 255);
-        for (const SnakeSegment &segment : snake)
+        for (size_t i = 0; i < snake.size(); i++)
         {
-            SDL_Rect rect = {segment.x, segment.y, snakeVelocity, snakeVelocity};
+            SDL_Rect rect = {snake[i].x, snake[i].y, snakeVelocity, snakeVelocity};
+
+            if (i == 0) // Head of the snake
+            {
+                SDL_SetRenderDrawColor(gameRenderer, 0, 255, 0, 255); // Head color (bright green)
+            }
+            else // Body of the snake
+            {
+                SDL_SetRenderDrawColor(gameRenderer, 0, 200, 0, 255); // Body color (darker green)
+            }
+
             SDL_RenderFillRect(gameRenderer, &rect);
         }
 
