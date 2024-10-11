@@ -14,6 +14,7 @@ void renderGameOverButton(SDL_Renderer *renderer, int x, int y, int width, int h
 void renderRestartButton(SDL_Renderer *renderer, int x, int y, int width, int height, SDL_Color textColor);
 void drawCircle(SDL_Renderer *renderer, int centerX, int centerY, int radius);
 void displayGameOverScreen(SDL_Renderer *renderer, int score);
+void drawFilledCircle(SDL_Renderer *renderer, int x, int y, int radius);
 void GameStarted(SDL_Renderer *renderer);
 void GameLoop(SDL_Renderer *renderer);
 void cleanUp(SDL_Window *window, SDL_Renderer *renderer);
@@ -240,6 +241,23 @@ void drawCircle(SDL_Renderer *renderer, int centerX, int centerY, int radius)
             if ((dx * dx + dy * dy) <= (radius * radius))
             {
                 SDL_RenderDrawPoint(renderer, centerX + dx, centerY + dy);
+            }
+        }
+    }
+}
+
+// Function to draw a filled circle
+void drawFilledCircle(SDL_Renderer *renderer, int x, int y, int radius)
+{
+    for (int w = 0; w < radius * 2; w++)
+    {
+        for (int h = 0; h < radius * 2; h++)
+        {
+            int dx = radius - w; // Horizontal offset
+            int dy = radius - h; // Vertical offset
+            if ((dx * dx + dy * dy) <= (radius * radius))
+            {
+                SDL_RenderDrawPoint(renderer, x + dx, y + dy);
             }
         }
     }
@@ -627,21 +645,27 @@ void GameStarted(SDL_Renderer *gameRenderer)
         SDL_RenderFillRect(gameRenderer, &leftWall);
         SDL_RenderFillRect(gameRenderer, &rightWall);
 
-        // Draw snake
+       
+        // Draw snake with rounded segments and gradient effect
         for (size_t i = 0; i < snake.size(); i++)
         {
-            SDL_Rect rect = {snake[i].x, snake[i].y, snakeVelocity, snakeVelocity};
+            // Gradually darken the color for each body segment
+            int colorIntensity = 200 - (i * 10); 
 
-            if (i == 0) // Head of the snake
+            if (i == 0) 
             {
-                SDL_SetRenderDrawColor(gameRenderer, 0, 255, 0, 255); // Head color (bright green)
-            }
-            else // Body of the snake
-            {
-                SDL_SetRenderDrawColor(gameRenderer, 0, 200, 0, 255); // Body color (darker green)
-            }
+                SDL_SetRenderDrawColor(gameRenderer, 0, 255, 0, 255); 
+                drawFilledCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2);
 
-            SDL_RenderFillRect(gameRenderer, &rect);
+                SDL_SetRenderDrawColor(gameRenderer, 0, 0, 0, 255);                                                      // Black color for eyes
+                SDL_RenderDrawPoint(gameRenderer, snake[i].x + snakeVelocity / 4, snake[i].y + snakeVelocity / 4);       // Left eye
+                SDL_RenderDrawPoint(gameRenderer, snake[i].x + (3 * snakeVelocity) / 4, snake[i].y + snakeVelocity / 4); // Right eye
+            }
+            else
+            {
+                SDL_SetRenderDrawColor(gameRenderer, 0, colorIntensity, 0, 255); 
+                drawFilledCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2);
+            }
         }
 
         // Draw normal food
