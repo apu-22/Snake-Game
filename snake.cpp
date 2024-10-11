@@ -13,8 +13,8 @@ void renderExitButton(SDL_Renderer *renderer, int x, int y, int width, int heigh
 void renderGameOverButton(SDL_Renderer *renderer, int x, int y, int width, int height, SDL_Color textColor);
 void renderRestartButton(SDL_Renderer *renderer, int x, int y, int width, int height, SDL_Color textColor);
 void drawCircle(SDL_Renderer *renderer, int centerX, int centerY, int radius);
-void displayGameOverScreen(SDL_Renderer *renderer, int score);
 void drawFilledCircle(SDL_Renderer *renderer, int x, int y, int radius);
+void displayGameOverScreen(SDL_Renderer *renderer, int score);
 void GameStarted(SDL_Renderer *renderer);
 void GameLoop(SDL_Renderer *renderer);
 void cleanUp(SDL_Window *window, SDL_Renderer *renderer);
@@ -268,7 +268,6 @@ void displayGameOverScreen(SDL_Renderer *renderer, int score)
     bool gameOverRunning = true;
     SDL_Event event;
 
-    // Load and render the game over image
     loadAndRenderImage(renderer, "image/game_over_screen.png");
 
     // Display the final score
@@ -645,25 +644,31 @@ void GameStarted(SDL_Renderer *gameRenderer)
         SDL_RenderFillRect(gameRenderer, &leftWall);
         SDL_RenderFillRect(gameRenderer, &rightWall);
 
-       
-        // Draw snake with rounded segments and gradient effect
+        // Draw snake with rounded segments, gradient effect, and outline
         for (size_t i = 0; i < snake.size(); i++)
         {
             // Gradually darken the color for each body segment
-            int colorIntensity = 200 - (i * 10); 
+            int colorIntensity = 200 - (i * 10);
 
-            if (i == 0) 
+            if (i == 0)
             {
-                SDL_SetRenderDrawColor(gameRenderer, 0, 255, 0, 255); 
+                SDL_SetRenderDrawColor(gameRenderer, 128, 128, 128, 255);                                                              
+                drawFilledCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2 + 1); 
+
+                // Draw head with bright green
+                SDL_SetRenderDrawColor(gameRenderer, 0, 255, 0, 255);
                 drawFilledCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2);
 
-                SDL_SetRenderDrawColor(gameRenderer, 0, 0, 0, 255);                                                      // Black color for eyes
-                SDL_RenderDrawPoint(gameRenderer, snake[i].x + snakeVelocity / 4, snake[i].y + snakeVelocity / 4);       // Left eye
-                SDL_RenderDrawPoint(gameRenderer, snake[i].x + (3 * snakeVelocity) / 4, snake[i].y + snakeVelocity / 4); // Right eye
+                SDL_SetRenderDrawColor(gameRenderer, 0, 0, 0, 255);                                                      
+                SDL_RenderDrawPoint(gameRenderer, snake[i].x + snakeVelocity / 4, snake[i].y + snakeVelocity / 4);      
+                SDL_RenderDrawPoint(gameRenderer, snake[i].x + (3 * snakeVelocity) / 4, snake[i].y + snakeVelocity / 4); 
             }
             else
             {
-                SDL_SetRenderDrawColor(gameRenderer, 0, colorIntensity, 0, 255); 
+                SDL_SetRenderDrawColor(gameRenderer, 128, 128, 128, 255);                                                              // Black outline for body
+                drawFilledCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2 + 1); // 2px outline
+
+                SDL_SetRenderDrawColor(gameRenderer, 0, colorIntensity, 0, 255); // Gradient green for body
                 drawFilledCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2);
             }
         }
@@ -675,7 +680,7 @@ void GameStarted(SDL_Renderer *gameRenderer)
         // Draw bonus food if active
         if (bonusFoodActive)
         {
-            SDL_SetRenderDrawColor(gameRenderer, 0, 0, 255, 255); // Bonus food color (blue)
+            SDL_SetRenderDrawColor(gameRenderer, 0, 0, 255, 255); 
             drawCircle(gameRenderer, bonusFood.x, bonusFood.y, bonusFoodRadius);
         }
 
