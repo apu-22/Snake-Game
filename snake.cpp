@@ -367,6 +367,22 @@ void GameStarted(SDL_Renderer *gameRenderer)
         return;
     }
 
+    
+    SDL_Texture *regularFoodTexture = IMG_LoadTexture(gameRenderer, "image/normal_fruit.png");
+    if (regularFoodTexture == nullptr)
+    {
+        cout << "Failed to load regular food texture! SDL_image Error: " << IMG_GetError() << endl;
+        return; 
+    }
+
+   
+    SDL_Texture *bonusFoodTexture = IMG_LoadTexture(gameRenderer, "image/bonus_fruit.png");
+    if (bonusFoodTexture == nullptr)
+    {
+        cout << "Failed to load bonus food texture! SDL_image Error: " << IMG_GetError() << endl;
+        return; 
+    }
+
     // Snake initialization
     vector<SnakeSegment> snake = {{SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2}};
     int snakeVelocity = 10;
@@ -652,7 +668,7 @@ void GameStarted(SDL_Renderer *gameRenderer)
 
             if (i == 0)
             {
-                SDL_SetRenderDrawColor(gameRenderer, 0, glowIntensity, 0, 100); 
+                SDL_SetRenderDrawColor(gameRenderer, 0, glowIntensity, 0, 100);
                 drawFilledCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2 + 2);
 
                 SDL_SetRenderDrawColor(gameRenderer, 128, 128, 128, 255);                                                              // Black outline for head
@@ -669,7 +685,7 @@ void GameStarted(SDL_Renderer *gameRenderer)
             }
             else
             {
-                SDL_SetRenderDrawColor(gameRenderer, 0, glowIntensity, 0, 100); 
+                SDL_SetRenderDrawColor(gameRenderer, 0, glowIntensity, 0, 100);
                 drawFilledCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2 + 2);
 
                 SDL_SetRenderDrawColor(gameRenderer, 128, 128, 128, 255);                                                              // Black outline for body
@@ -680,15 +696,15 @@ void GameStarted(SDL_Renderer *gameRenderer)
             }
         }
 
-        // Draw normal food
-        SDL_SetRenderDrawColor(gameRenderer, 255, 0, 0, 255);
-        SDL_RenderFillRect(gameRenderer, &food);
+        // Render regular food
+        SDL_Rect foodRect = {food.x, food.y, 15, 15}; 
+        SDL_RenderCopy(gameRenderer, regularFoodTexture, nullptr, &foodRect);
 
-        // Draw bonus food if active
+        // Render bonus food if active
         if (bonusFoodActive)
         {
-            SDL_SetRenderDrawColor(gameRenderer, 0, 0, 255, 255); // Bonus food color (blue)
-            drawCircle(gameRenderer, bonusFood.x, bonusFood.y, bonusFoodRadius);
+            SDL_Rect bonusFoodRect = {bonusFood.x - bonusFoodRadius, bonusFood.y - bonusFoodRadius, 25, 25};
+            SDL_RenderCopy(gameRenderer, bonusFoodTexture, nullptr, &bonusFoodRect);
         }
 
         SDL_Color white = {255, 255, 255, 255};
@@ -775,13 +791,11 @@ void GameLoop(SDL_Renderer *renderer)
                 int mouseX = e.button.x;
                 int mouseY = e.button.y;
 
-                // Handle "Start Game" button click
                 if (handleStartButtonClick(mouseX, mouseY, startX, startY, buttonWidth, buttonHeight))
                 {
                     gameStarted = true;
                     quit = true;
                 }
-                // Handle "Exit Game" button click
                 else if (handleExitButtonClick(mouseX, mouseY, exitX, exitY, buttonWidth, buttonHeight))
                 {
                     quit = true;
@@ -795,7 +809,6 @@ void GameLoop(SDL_Renderer *renderer)
 
     if (gameStarted)
     {
-        // Start the game if the "Start Game" button was clicked
         GameStarted(renderer);
     }
 }
