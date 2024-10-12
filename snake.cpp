@@ -367,20 +367,18 @@ void GameStarted(SDL_Renderer *gameRenderer)
         return;
     }
 
-    
     SDL_Texture *regularFoodTexture = IMG_LoadTexture(gameRenderer, "image/normal_fruit.png");
     if (regularFoodTexture == nullptr)
     {
         cout << "Failed to load regular food texture! SDL_image Error: " << IMG_GetError() << endl;
-        return; 
+        return;
     }
 
-   
     SDL_Texture *bonusFoodTexture = IMG_LoadTexture(gameRenderer, "image/bonus_fruit.png");
     if (bonusFoodTexture == nullptr)
     {
         cout << "Failed to load bonus food texture! SDL_image Error: " << IMG_GetError() << endl;
-        return; 
+        return;
     }
 
     // Snake initialization
@@ -697,7 +695,7 @@ void GameStarted(SDL_Renderer *gameRenderer)
         }
 
         // Render regular food
-        SDL_Rect foodRect = {food.x, food.y, 15, 15}; 
+        SDL_Rect foodRect = {food.x, food.y, 15, 15};
         SDL_RenderCopy(gameRenderer, regularFoodTexture, nullptr, &foodRect);
 
         // Render bonus food if active
@@ -720,6 +718,8 @@ void GameStarted(SDL_Renderer *gameRenderer)
         SDL_Delay(100);
     }
 
+    SDL_DestroyTexture(regularFoodTexture);
+    SDL_DestroyTexture(bonusFoodTexture);
     SDL_DestroyRenderer(gameRenderer);
     SDL_DestroyWindow(gameWindow);
 }
