@@ -22,6 +22,9 @@ SDL_Window *window = nullptr;
 SDL_Renderer *renderer = nullptr;
 Mix_Music *backgroundMusic = nullptr;
 TTF_Font *font = nullptr;
+TTF_Font *score = nullptr;
+TTF_Font *finalScore = nullptr;
+TTF_Font *game_over = nullptr;
 Mix_Chunk *eatingSound = nullptr;
 Mix_Chunk *bonusEatingSound = nullptr;
 Mix_Chunk *gameOverSound = nullptr;
@@ -38,27 +41,24 @@ using namespace std;
 
 bool initializeSDL(SDL_Window *&window, SDL_Renderer *&renderer)
 {
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) // Initialize audio along with video
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
     {
         cout << "SDL could not initialize! SDL Error: " << SDL_GetError() << endl;
         return false;
     }
 
-    // initialize SDL_Image
     if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG))
     {
         cout << "SDL_image could not initialize! SDL_image Error: " << IMG_GetError() << endl;
         return false;
     }
 
-    // Initialize SDL_mixer
     if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
     {
         cout << "SDL_mixer could not initialize! SDL_mixer Error: " << Mix_GetError() << endl;
         return false;
     }
 
-    // Initialize SDL_ttf
     if (TTF_Init() == -1)
     {
         cout << "SDL_ttf could not initialize! SDL_ttf Error: " << TTF_GetError() << endl;
@@ -79,11 +79,31 @@ bool initializeSDL(SDL_Window *&window, SDL_Renderer *&renderer)
         return false;
     }
 
-    // Load font
     font = TTF_OpenFont("Fonts/arial.ttf", 28);
     if (font == nullptr)
     {
         cout << "Failed to load font! SDL_ttf Error: " << TTF_GetError() << endl;
+        return false;
+    }
+
+    score = TTF_OpenFont("Fonts/score.otf", 18);
+    if (score == nullptr)
+    {
+        cout << "Failed to load score font! SDL_ttf Error: " << TTF_GetError() << endl;
+        return false;
+    }
+
+    game_over = TTF_OpenFont("Fonts/game_over.ttf", 28);
+    if (game_over == nullptr)
+    {
+        cout << "Failed to load game over font! SDL_ttf Error: " << TTF_GetError() << endl;
+        return false;
+    }
+
+    finalScore = TTF_OpenFont("Fonts/finalScore.otf", 30);
+    if (finalScore == nullptr)
+    {
+        cout << "Failed to load final score font! SDL_ttf Error: " << TTF_GetError() << endl;
         return false;
     }
 
@@ -116,7 +136,7 @@ bool loadAndRenderImage(SDL_Renderer *renderer, const char *filePath)
     SDL_Texture *texture = IMG_LoadTexture(renderer, filePath);
     if (texture == nullptr)
     {
-        std::cout << "Failed to load texture! SDL_image Error: " << IMG_GetError() << std::endl;
+        cout << "Failed to load texture! SDL_image Error: " << IMG_GetError() << endl;
         return false;
     }
 
@@ -131,7 +151,6 @@ bool loadAndRenderImage(SDL_Renderer *renderer, const char *filePath)
     return true;
 }
 
-// Function to render text to the screen
 void renderText(SDL_Renderer *renderer, const char *message, int x, int y, SDL_Color color)
 {
     SDL_Surface *surface = TTF_RenderText_Solid(font, message, color);
@@ -144,7 +163,42 @@ void renderText(SDL_Renderer *renderer, const char *message, int x, int y, SDL_C
     SDL_DestroyTexture(texture);
 }
 
-// Function to load and play background music
+void scoreRenderText(SDL_Renderer *renderer, const char *message, int x, int y, SDL_Color color)
+{
+    SDL_Surface *surface = TTF_RenderText_Solid(score, message, color);
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+    SDL_Rect dstrect = {x, y, surface->w, surface->h};
+    SDL_RenderCopy(renderer, texture, nullptr, &dstrect);
+
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(texture);
+}
+
+void finalScoreRenderText(SDL_Renderer *renderer, const char *message, int x, int y, SDL_Color color)
+{
+    SDL_Surface *surface = TTF_RenderText_Solid(finalScore, message, color);
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+    SDL_Rect dstrect = {x, y, surface->w, surface->h};
+    SDL_RenderCopy(renderer, texture, nullptr, &dstrect);
+
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(texture);
+}
+
+void gameOverRenderText(SDL_Renderer *renderer, const char *message, int x, int y, SDL_Color color)
+{
+    SDL_Surface *surface = TTF_RenderText_Solid(game_over, message, color);
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+    SDL_Rect dstrect = {x, y, surface->w, surface->h};
+    SDL_RenderCopy(renderer, texture, nullptr, &dstrect);
+
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(texture);
+}
+
 bool playBackgroundMusic(const char *musicPath)
 {
     backgroundMusic = Mix_LoadMUS(musicPath);
@@ -163,17 +217,14 @@ bool playBackgroundMusic(const char *musicPath)
     return true;
 }
 
-// Function to render the "Start Game" button
 void renderStartButton(SDL_Renderer *renderer, int x, int y, int width, int height, SDL_Color textColor)
 {
     SDL_Rect startRect = {x, y, width, height};
-    // SDL_SetRenderDrawColor(renderer, 138, 43, 226, 255);
     SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
     SDL_RenderFillRect(renderer, &startRect);
     renderText(renderer, "Start Game", x + 30, y + 10, textColor);
 }
 
-// Function to render the "Exit Game" button
 void renderExitButton(SDL_Renderer *renderer, int x, int y, int width, int height, SDL_Color textColor)
 {
     SDL_Rect exitRect = {x, y, width, height};
@@ -187,19 +238,17 @@ void renderGameOverButton(SDL_Renderer *renderer, int x, int y, int width, int h
     SDL_Rect gameOverRect = {x, y, width, height};
     SDL_SetRenderDrawColor(renderer, 128, 128, 128, 255);
     SDL_RenderFillRect(renderer, &gameOverRect);
-    renderText(renderer, "Game Over", x + 30, y + 10, textColor);
+    gameOverRenderText(renderer, "Game Over", x + 30, y + 10, textColor);
 }
 
-// Function to render the "Restart Game" button
 void renderRestartButton(SDL_Renderer *renderer, int x, int y, int width, int height, SDL_Color textColor)
 {
     SDL_Rect restartRect = {x, y, width, height};
-    SDL_SetRenderDrawColor(renderer, 255, 165, 0, 255);
+    SDL_SetRenderDrawColor(renderer, 0, 200, 0, 255);
     SDL_RenderFillRect(renderer, &restartRect);
     renderText(renderer, "Restart Game", x + 30, y + 10, textColor);
 }
 
-// Function to handle mouse click for the "Restart Game" button
 bool handleRestartButtonClick(int mouseX, int mouseY, int x, int y, int width, int height)
 {
     return (mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + height);
@@ -210,19 +259,16 @@ bool handleGameOverButtonClick(int mouseX, int mouseY, int x, int y, int width, 
     return (mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + height);
 }
 
-// Function to handle mouse click for the "Start Game" button
 bool handleStartButtonClick(int mouseX, int mouseY, int x, int y, int width, int height)
 {
     return (mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + height);
 }
 
-// Function to handle mouse click for the "Exit Game" button
 bool handleExitButtonClick(int mouseX, int mouseY, int x, int y, int width, int height)
 {
     return (mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + height);
 }
 
-// Utility function to check if the mouse is over a button
 bool isMouseOverButton(int mouseX, int mouseY, int buttonX, int buttonY, int buttonWidth, int buttonHeight)
 {
     return (mouseX >= buttonX && mouseX <= buttonX + buttonWidth &&
@@ -245,54 +291,31 @@ void drawCircle(SDL_Renderer *renderer, int centerX, int centerY, int radius)
     }
 }
 
-// Function to draw a filled circle
-void drawFilledCircle(SDL_Renderer *renderer, int x, int y, int radius)
-{
-    for (int w = 0; w < radius * 2; w++)
-    {
-        for (int h = 0; h < radius * 2; h++)
-        {
-            int dx = radius - w; // Horizontal offset
-            int dy = radius - h; // Vertical offset
-            if ((dx * dx + dy * dy) <= (radius * radius))
-            {
-                SDL_RenderDrawPoint(renderer, x + dx, y + dy);
-            }
-        }
-    }
-}
-
 void displayGameOverScreen(SDL_Renderer *renderer, int score)
 {
     bool gameOverRunning = true;
     SDL_Event event;
 
-    // Load and render the game over image
     loadAndRenderImage(renderer, "image/game_over_screen.png");
 
-    // Display the final score
     SDL_Color white = {255, 255, 255, 255};
     SDL_Color black = {0, 0, 0, 255};
 
-    string scoreText = "Final Score: " + to_string(score);
-    renderText(renderer, scoreText.c_str(), SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2, white);
+    string scoreText = "Final  Score: " + to_string(score);
+    finalScoreRenderText(renderer, scoreText.c_str(), SCREEN_WIDTH / 2 - 165, SCREEN_HEIGHT / 2 + 20 , black);
 
-    // Button size and position
     int buttonWidth = 240, buttonHeight = 50;
     int restartX = SCREEN_WIDTH / 2 - 120;
-    int restartY = SCREEN_HEIGHT / 2 + 100;
+    int restartY = SCREEN_HEIGHT / 2 +70;
 
     int exitX = SCREEN_WIDTH / 2 - 100;
-    int exitY = SCREEN_HEIGHT / 2 + 160;
+    int exitY = SCREEN_HEIGHT / 2+150;
 
-    // Create cursors
     SDL_Cursor *arrowCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
     SDL_Cursor *handCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
 
-    // Set the default cursor
     SDL_SetCursor(arrowCursor);
 
-    // Render buttons for "Restart Game" and "Exit Game"
     renderRestartButton(renderer, restartX, restartY, buttonWidth, buttonHeight, black);
     renderExitButton(renderer, exitX, exitY, 200, buttonHeight, white);
 
@@ -311,7 +334,6 @@ void displayGameOverScreen(SDL_Renderer *renderer, int score)
                 int mouseX = event.motion.x;
                 int mouseY = event.motion.y;
 
-                // Check if mouse is over "Start Game" or "Exit Game" button
                 bool restartButton = isMouseOverButton(mouseX, mouseY, restartX, restartY, buttonWidth, buttonHeight);
                 bool overExitButton = isMouseOverButton(mouseX, mouseY, exitX, exitY, 200, buttonHeight);
 
@@ -329,7 +351,6 @@ void displayGameOverScreen(SDL_Renderer *renderer, int score)
                 int mouseX = event.button.x;
                 int mouseY = event.button.y;
 
-                // Handle "Restart Game" button click
                 if (handleRestartButtonClick(mouseX, mouseY, restartX, restartY, buttonWidth, buttonHeight))
                 {
                     gameOverRunning = false;
@@ -337,7 +358,6 @@ void displayGameOverScreen(SDL_Renderer *renderer, int score)
                     SDL_FreeCursor(handCursor);
                     GameStarted(renderer);
                 }
-                // Handle "Exit Game" button click
                 else if (handleExitButtonClick(mouseX, mouseY, exitX, exitY, 200, buttonHeight))
                 {
                     gameOverRunning = false;
@@ -386,7 +406,6 @@ void GameStarted(SDL_Renderer *gameRenderer)
     int snakeVelocity = 10;
     int dirX = 1, dirY = 0;
 
-    // Wall dimensions
     const int wallThickness = 20;
 
     // Regular food initialization
@@ -394,15 +413,12 @@ void GameStarted(SDL_Renderer *gameRenderer)
                      rand() % ((SCREEN_HEIGHT - wallThickness * 2) / snakeVelocity) * snakeVelocity + wallThickness,
                      10, 10};
 
-    // Bonus food initialization
     bool bonusFoodActive = false;
     SDL_Point bonusFood;
     int bonusFoodRadius = 10;
 
-    // Score initialization
     int score = 0;
 
-    // Main game loop
     bool gameRunning = true;
     SDL_Event e;
 
@@ -468,14 +484,12 @@ void GameStarted(SDL_Renderer *gameRenderer)
             SDL_Cursor *arrowCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
             SDL_Cursor *handCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
 
-            // Set the default cursor
             SDL_SetCursor(arrowCursor);
 
             int buttonWidth = 200, buttonHeight = 50;
             int overX = SCREEN_WIDTH / 2 - 100;
             int overY = SCREEN_HEIGHT / 2 - 50;
 
-            // Render "Game Over" button
             renderGameOverButton(gameRenderer, overX, overY, buttonWidth, buttonHeight, orange);
             SDL_RenderPresent(gameRenderer);
 
@@ -493,7 +507,6 @@ void GameStarted(SDL_Renderer *gameRenderer)
                         int mouseX = event.motion.x;
                         int mouseY = event.motion.y;
 
-                        // Check if mouse is over "Game Over" button
                         bool gameOverButton = isMouseOverButton(mouseX, mouseY, overX, overY, buttonWidth, buttonHeight);
                         if (gameOverButton)
                         {
@@ -510,7 +523,6 @@ void GameStarted(SDL_Renderer *gameRenderer)
                         int mouseX = event.button.x;
                         int mouseY = event.button.y;
 
-                        // Handle "Game Over" button click
                         if (handleGameOverButtonClick(mouseX, mouseY, overX, overY, buttonWidth, buttonHeight))
                         {
                             gameOver = false;
@@ -523,7 +535,6 @@ void GameStarted(SDL_Renderer *gameRenderer)
             }
             break;
         }
-        // Check for collision with itself
         for (size_t i = 1; i < snake.size(); i++)
         {
             if (newHead.x == snake[i].x && newHead.y == snake[i].y)
@@ -537,14 +548,12 @@ void GameStarted(SDL_Renderer *gameRenderer)
                 SDL_Cursor *arrowCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
                 SDL_Cursor *handCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
 
-                // Set the default cursor
                 SDL_SetCursor(arrowCursor);
 
                 int buttonWidth = 200, buttonHeight = 50;
                 int overX = SCREEN_WIDTH / 2 - 100;
                 int overY = SCREEN_HEIGHT / 2 - 50;
 
-                // Render "Game Over" button
                 renderGameOverButton(gameRenderer, overX, overY, buttonWidth, buttonHeight, orange);
                 SDL_RenderPresent(gameRenderer);
 
@@ -564,7 +573,6 @@ void GameStarted(SDL_Renderer *gameRenderer)
                             int mouseX = event.motion.x;
                             int mouseY = event.motion.y;
 
-                            // Check if mouse is over "Game Over" button
                             bool gameOverButton = isMouseOverButton(mouseX, mouseY, overX, overY, buttonWidth, buttonHeight);
                             if (gameOverButton)
                             {
@@ -580,7 +588,6 @@ void GameStarted(SDL_Renderer *gameRenderer)
                             int mouseX = event.button.x;
                             int mouseY = event.button.y;
 
-                            // Handle "Game Over" button click
                             if (handleGameOverButtonClick(mouseX, mouseY, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 25, 200, 50))
                             {
                                 gameOver = false;
@@ -605,7 +612,6 @@ void GameStarted(SDL_Renderer *gameRenderer)
 
         snake.insert(snake.begin(), newHead);
 
-        // Regular food is eaten and increment the food count
         if (newHead.x == food.x && newHead.y == food.y)
         {
             Mix_PlayChannel(-1, eatingSound, 0);
@@ -629,7 +635,6 @@ void GameStarted(SDL_Renderer *gameRenderer)
             snake.pop_back();
         }
 
-        // Check for collision with bonus food
         if (bonusFoodActive)
         {
             int distX = newHead.x - bonusFood.x;
@@ -647,9 +652,8 @@ void GameStarted(SDL_Renderer *gameRenderer)
         SDL_SetRenderDrawColor(gameRenderer, 100, 150, 200, 255);
         SDL_RenderClear(gameRenderer);
 
-        // Draw walls
         SDL_SetRenderDrawColor(gameRenderer, 180, 180, 180, 0);
-        SDL_Rect topWall = {0, 0, SCREEN_WIDTH, wallThickness + 10};
+        SDL_Rect topWall = {0, 0, SCREEN_WIDTH, wallThickness + 2};
         SDL_Rect bottomWall = {0, SCREEN_HEIGHT - wallThickness, SCREEN_WIDTH, wallThickness};
         SDL_Rect leftWall = {0, 0, wallThickness, SCREEN_HEIGHT};
         SDL_Rect rightWall = {SCREEN_WIDTH - wallThickness, 0, wallThickness, SCREEN_HEIGHT};
@@ -658,7 +662,6 @@ void GameStarted(SDL_Renderer *gameRenderer)
         SDL_RenderFillRect(gameRenderer, &leftWall);
         SDL_RenderFillRect(gameRenderer, &rightWall);
 
-        // Draw snake with rounded segments, gradient effect, and outline
         for (size_t i = 0; i < snake.size(); i++)
         {
             int colorIntensity = 200 - (int)(pow(i, 1.5) * 5);
@@ -667,51 +670,46 @@ void GameStarted(SDL_Renderer *gameRenderer)
             if (i == 0)
             {
                 SDL_SetRenderDrawColor(gameRenderer, 0, glowIntensity, 0, 100);
-                drawFilledCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2 + 2);
+                drawCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2 + 2);
 
-                SDL_SetRenderDrawColor(gameRenderer, 128, 128, 128, 255);                                                              // Black outline for head
-                drawFilledCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2 + 1); // 2px outline
+                SDL_SetRenderDrawColor(gameRenderer, 128, 128, 128, 255);                                                        
+                drawCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2 + 1); 
 
-                // Draw head with bright green
                 SDL_SetRenderDrawColor(gameRenderer, 0, 255, 0, 255);
-                drawFilledCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2);
+                drawCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2);
 
-                // Draw eyes
-                SDL_SetRenderDrawColor(gameRenderer, 0, 0, 0, 255);                                                      // Black color for eyes
-                SDL_RenderDrawPoint(gameRenderer, snake[i].x + snakeVelocity / 4, snake[i].y + snakeVelocity / 4);       // Left eye
-                SDL_RenderDrawPoint(gameRenderer, snake[i].x + (3 * snakeVelocity) / 4, snake[i].y + snakeVelocity / 4); // Right eye
+                SDL_SetRenderDrawColor(gameRenderer, 0, 0, 0, 255);                                                     
+                SDL_RenderDrawPoint(gameRenderer, snake[i].x + snakeVelocity / 4, snake[i].y + snakeVelocity / 4);      
+                SDL_RenderDrawPoint(gameRenderer, snake[i].x + (3 * snakeVelocity) / 4, snake[i].y + snakeVelocity / 4); 
             }
             else
             {
                 SDL_SetRenderDrawColor(gameRenderer, 0, glowIntensity, 0, 100);
-                drawFilledCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2 + 2);
+                drawCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2 + 2);
 
-                SDL_SetRenderDrawColor(gameRenderer, 128, 128, 128, 255);                                                              // Black outline for body
-                drawFilledCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2 + 1); // 2px outline
+                SDL_SetRenderDrawColor(gameRenderer, 128, 128, 128, 255);                                                       
+                drawCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2 + 1); 
 
-                SDL_SetRenderDrawColor(gameRenderer, 0, colorIntensity, 0, 255); // Gradient green for body
-                drawFilledCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2);
+                SDL_SetRenderDrawColor(gameRenderer, 0, colorIntensity, 0, 255); 
+                drawCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2);
             }
         }
 
-        // Render regular food
         SDL_Rect foodRect = {food.x, food.y, 15, 15};
         SDL_RenderCopy(gameRenderer, regularFoodTexture, nullptr, &foodRect);
 
-        // Render bonus food if active
         if (bonusFoodActive)
         {
             SDL_Rect bonusFoodRect = {bonusFood.x - bonusFoodRadius, bonusFood.y - bonusFoodRadius, 25, 25};
             SDL_RenderCopy(gameRenderer, bonusFoodTexture, nullptr, &bonusFoodRect);
         }
 
-        SDL_Color white = {255, 255, 255, 255};
+        SDL_Color black = {0, 0, 0, 255};
         string scoreText = "Score: " + to_string(score);
 
-        // Render score within the top-left wall with a small offset
         int scoreX = 1;
         int scoreY = 1;
-        renderText(gameRenderer, scoreText.c_str(), scoreX, scoreY, white);
+        scoreRenderText(gameRenderer, scoreText.c_str(), scoreX, scoreY, black);
 
         SDL_RenderPresent(gameRenderer);
 
@@ -733,7 +731,6 @@ void GameLoop(SDL_Renderer *renderer)
     SDL_Color white = {255, 255, 255, 255};
     SDL_Color black = {0, 0, 0, 255};
 
-    // Button size and position
     int buttonWidth = 200, buttonHeight = 50;
     int startX = SCREEN_WIDTH / 2 - 100;
     int startY = SCREEN_HEIGHT / 2 - 50;
@@ -741,24 +738,20 @@ void GameLoop(SDL_Renderer *renderer)
     int exitX = SCREEN_WIDTH / 2 - 100;
     int exitY = SCREEN_HEIGHT / 2 + 50;
 
-    // Create cursors
     SDL_Cursor *arrowCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
     SDL_Cursor *handCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
 
-    // Set the default cursor
     SDL_SetCursor(arrowCursor);
 
-    // Draw the initial screen (background and buttons)
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
     loadAndRenderImage(renderer, "image/cover_photo.png");
 
-    // Render buttons
     renderStartButton(renderer, startX, startY, buttonWidth, buttonHeight, black);
     renderExitButton(renderer, exitX, exitY, buttonWidth, buttonHeight, white);
 
-    SDL_RenderPresent(renderer); // Present the rendered content
+    SDL_RenderPresent(renderer); 
 
     while (!quit)
     {
@@ -773,7 +766,6 @@ void GameLoop(SDL_Renderer *renderer)
                 int mouseX = e.motion.x;
                 int mouseY = e.motion.y;
 
-                // Check if mouse is over "Start Game" or "Exit Game" button
                 bool overStartButton = isMouseOverButton(mouseX, mouseY, startX, startY, buttonWidth, buttonHeight);
                 bool overExitButton = isMouseOverButton(mouseX, mouseY, exitX, exitY, buttonWidth, buttonHeight);
 
@@ -841,28 +833,23 @@ void cleanUp(SDL_Window *window, SDL_Renderer *renderer)
 
 int main(int argc, char *args[])
 {
-    // create window and render
     if (!initializeSDL(window, renderer))
     {
         cleanUp(window, renderer);
         return -1;
     }
 
-    // snake game cover photo
     if (!loadAndRenderImage(renderer, "image/cover_photo.png"))
     {
         cleanUp(window, renderer);
         return -1;
     }
 
-    // Play background music
     if (!playBackgroundMusic("audio/background_music.mp3"))
     {
         cleanUp(window, renderer);
         return -1;
     }
-
-    // main gameloop
 
     GameLoop(renderer);
 
