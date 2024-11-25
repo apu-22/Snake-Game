@@ -302,14 +302,14 @@ void displayGameOverScreen(SDL_Renderer *renderer, int score)
     SDL_Color black = {0, 0, 0, 255};
 
     string scoreText = "Final  Score: " + to_string(score);
-    finalScoreRenderText(renderer, scoreText.c_str(), SCREEN_WIDTH / 2 - 165, SCREEN_HEIGHT / 2 + 20 , black);
+    finalScoreRenderText(renderer, scoreText.c_str(), SCREEN_WIDTH / 2 - 165, SCREEN_HEIGHT / 2 + 20, black);
 
     int buttonWidth = 240, buttonHeight = 50;
     int restartX = SCREEN_WIDTH / 2 - 120;
-    int restartY = SCREEN_HEIGHT / 2 +70;
+    int restartY = SCREEN_HEIGHT / 2 + 70;
 
     int exitX = SCREEN_WIDTH / 2 - 100;
-    int exitY = SCREEN_HEIGHT / 2+150;
+    int exitY = SCREEN_HEIGHT / 2 + 150;
 
     SDL_Cursor *arrowCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
     SDL_Cursor *handCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
@@ -535,6 +535,7 @@ void GameStarted(SDL_Renderer *gameRenderer)
             }
             break;
         }
+
         for (size_t i = 1; i < snake.size(); i++)
         {
             if (newHead.x == snake[i].x && newHead.y == snake[i].y)
@@ -662,6 +663,130 @@ void GameStarted(SDL_Renderer *gameRenderer)
         SDL_RenderFillRect(gameRenderer, &leftWall);
         SDL_RenderFillRect(gameRenderer, &rightWall);
 
+        SDL_SetRenderDrawColor(gameRenderer, 0, 0, 0, 0);
+        SDL_Rect topObstracle = {610, 60, SCREEN_WIDTH / 3 - 150, wallThickness - 10};
+        SDL_Rect bottomObstracle = {60, SCREEN_HEIGHT - (wallThickness + 50), SCREEN_WIDTH - 700, wallThickness - 10};
+        SDL_Rect leftObstracle = {60, 60, wallThickness - 10, SCREEN_HEIGHT - 120};
+        SDL_Rect rightObstracle = {SCREEN_WIDTH - (wallThickness + 60), 60, wallThickness - 10, SCREEN_HEIGHT - 120};
+        SDL_RenderFillRect(gameRenderer, &topObstracle);
+        SDL_RenderFillRect(gameRenderer, &bottomObstracle);
+        SDL_RenderFillRect(gameRenderer, &leftObstracle);
+        SDL_RenderFillRect(gameRenderer, &rightObstracle);
+
+        // Check for collision with obstacles
+        SDL_Rect newHeadRect = {newHead.x, newHead.y, snakeVelocity, snakeVelocity};
+        if (SDL_HasIntersection(&newHeadRect, &topObstracle) || SDL_HasIntersection(&newHeadRect, &bottomObstracle) ||
+            SDL_HasIntersection(&newHeadRect, &leftObstracle) || SDL_HasIntersection(&newHeadRect, &rightObstracle))
+        {
+            bool paused = true;
+
+            SDL_Color red = {255, 0, 0, 255};
+            string pauseMessage = "WARNING!. Press Y to continue or N to quit.";
+
+            SDL_RenderPresent(gameRenderer);
+
+            while (paused)
+            {
+                // Render the current game state (snake and obstacles)
+                SDL_SetRenderDrawColor(gameRenderer, 100, 150, 200, 255);
+                SDL_RenderClear(gameRenderer);
+
+                // Render obstacles
+                SDL_SetRenderDrawColor(gameRenderer, 0, 0, 0, 255);
+                SDL_RenderFillRect(gameRenderer, &topObstracle);
+                SDL_RenderFillRect(gameRenderer, &bottomObstracle);
+                SDL_RenderFillRect(gameRenderer, &leftObstracle);
+                SDL_RenderFillRect(gameRenderer, &rightObstracle);
+
+                // Render snake
+                for (size_t i = 0; i < snake.size(); i++)
+                {
+                    int colorIntensity = 200 - (int)(pow(i, 1.5) * 5);
+                    SDL_SetRenderDrawColor(gameRenderer, 0, colorIntensity, 0, 255);
+                    drawCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2);
+                }
+
+                renderText(gameRenderer, pauseMessage.c_str(), SCREEN_WIDTH / 2 - 320, SCREEN_HEIGHT / 2, red);
+
+                SDL_RenderPresent(gameRenderer);
+                while (SDL_PollEvent(&e))
+                {
+                    if (e.type == SDL_QUIT)
+                    {
+                        gameRunning = false;
+                        paused = false;
+                    }
+                    else if (e.type == SDL_KEYDOWN)
+                    {
+                        if (e.key.keysym.sym == SDLK_y)
+                        {
+                            paused = false;
+                        }
+                        else if (e.key.keysym.sym == SDLK_n)
+                        {
+                            paused = false;
+                            gameRunning = false;
+                            bool gameOver = true;
+
+                            SDL_Color orange = {255, 165, 0, 255};
+                            SDL_Cursor *arrowCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+                            SDL_Cursor *handCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+
+                            SDL_SetCursor(arrowCursor);
+
+                            int buttonWidth = 200, buttonHeight = 50;
+                            int overX = SCREEN_WIDTH / 2 - 100;
+                            int overY = SCREEN_HEIGHT / 2 - 50;
+
+                            renderGameOverButton(gameRenderer, overX, overY, buttonWidth, buttonHeight, orange);
+                            SDL_RenderPresent(gameRenderer);
+
+                            while (gameOver)
+                            {
+                                while (SDL_PollEvent(&e))
+                                {
+                                    if (e.type == SDL_QUIT)
+                                    {
+                                        gameOver = false;
+                                    }
+                                    else if (e.type == SDL_MOUSEMOTION)
+                                    {
+                                        int mouseX = e.motion.x;
+                                        int mouseY = e.motion.y;
+
+                                        bool isOverButton = isMouseOverButton(mouseX, mouseY, overX, overY, buttonWidth, buttonHeight);
+                                        if (isOverButton)
+                                        {
+                                            SDL_SetCursor(handCursor);
+                                        }
+                                        else
+                                        {
+                                            SDL_SetCursor(arrowCursor);
+                                        }
+                                    }
+                                    else if (e.type == SDL_MOUSEBUTTONUP && e.button.button == SDL_BUTTON_LEFT)
+                                    {
+                                        int mouseX = e.button.x;
+                                        int mouseY = e.button.y;
+
+                                        if (handleGameOverButtonClick(mouseX, mouseY, overX, overY, buttonWidth, buttonHeight))
+                                        {
+                                            gameOver = false;
+                                            SDL_FreeCursor(arrowCursor);
+                                            SDL_FreeCursor(handCursor);
+
+                                            // Display the Game Over screen
+                                            displayGameOverScreen(gameRenderer, score);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         for (size_t i = 0; i < snake.size(); i++)
         {
             int colorIntensity = 200 - (int)(pow(i, 1.5) * 5);
@@ -672,25 +797,25 @@ void GameStarted(SDL_Renderer *gameRenderer)
                 SDL_SetRenderDrawColor(gameRenderer, 0, glowIntensity, 0, 100);
                 drawCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2 + 2);
 
-                SDL_SetRenderDrawColor(gameRenderer, 128, 128, 128, 255);                                                        
-                drawCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2 + 1); 
+                SDL_SetRenderDrawColor(gameRenderer, 128, 128, 128, 255);
+                drawCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2 + 1);
 
                 SDL_SetRenderDrawColor(gameRenderer, 0, 255, 0, 255);
                 drawCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2);
 
-                SDL_SetRenderDrawColor(gameRenderer, 0, 0, 0, 255);                                                     
-                SDL_RenderDrawPoint(gameRenderer, snake[i].x + snakeVelocity / 4, snake[i].y + snakeVelocity / 4);      
-                SDL_RenderDrawPoint(gameRenderer, snake[i].x + (3 * snakeVelocity) / 4, snake[i].y + snakeVelocity / 4); 
+                SDL_SetRenderDrawColor(gameRenderer, 0, 0, 0, 255);
+                SDL_RenderDrawPoint(gameRenderer, snake[i].x + snakeVelocity / 4, snake[i].y + snakeVelocity / 4);
+                SDL_RenderDrawPoint(gameRenderer, snake[i].x + (3 * snakeVelocity) / 4, snake[i].y + snakeVelocity / 4);
             }
             else
             {
                 SDL_SetRenderDrawColor(gameRenderer, 0, glowIntensity, 0, 100);
                 drawCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2 + 2);
 
-                SDL_SetRenderDrawColor(gameRenderer, 128, 128, 128, 255);                                                       
-                drawCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2 + 1); 
+                SDL_SetRenderDrawColor(gameRenderer, 128, 128, 128, 255);
+                drawCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2 + 1);
 
-                SDL_SetRenderDrawColor(gameRenderer, 0, colorIntensity, 0, 255); 
+                SDL_SetRenderDrawColor(gameRenderer, 0, colorIntensity, 0, 255);
                 drawCircle(gameRenderer, snake[i].x + snakeVelocity / 2, snake[i].y + snakeVelocity / 2, snakeVelocity / 2);
             }
         }
@@ -751,7 +876,7 @@ void GameLoop(SDL_Renderer *renderer)
     renderStartButton(renderer, startX, startY, buttonWidth, buttonHeight, black);
     renderExitButton(renderer, exitX, exitY, buttonWidth, buttonHeight, white);
 
-    SDL_RenderPresent(renderer); 
+    SDL_RenderPresent(renderer);
 
     while (!quit)
     {
